@@ -20,19 +20,25 @@ func (n Int) Compare(m Comparable) int {
 }
 
 func TestList(t *testing.T) {
-	var ls *List
-	for i := 0; i < 10; i++ {
-		ls = New()
-		for j := 0; j < 10; j++ {
+	var (
+		iters    = 2
+		numItems = 5
+	)
+
+	for i := 0; i < iters; i++ {
+		ls := New()
+		for j := 0; j < numItems; j++ {
 			ls.Insert(Int(rand.Int()))
 		}
-
-		t.Fatalf("%v\n", ls.Slice())
 
 		for itm := ls.head; itm != nil && itm.next != nil; itm = itm.next {
 			if 0 < itm.value.Compare(itm.next.value) {
 				t.Fatalf("expected %v < %v\n", itm.value, itm.next.value)
 			}
+		}
+
+		if s := ls.Slice(); len(s) != ls.length {
+			t.Fatalf("expected length %d, received %d\n", ls.length, len(s))
 		}
 	}
 }

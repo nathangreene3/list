@@ -2,7 +2,7 @@ package list
 
 // List ...
 type List struct {
-	head, tail *item
+	head, tail *Item
 	length     int
 }
 
@@ -11,6 +11,17 @@ func New(values ...Comparable) *List {
 	var ls List
 	ls.Insert(values...)
 	return &ls
+}
+
+// Find ...
+func (ls *List) Find(value Comparable) *Item {
+	for itm := ls.head; itm != nil; itm = itm.next {
+		if itm.value.Compare(value) == 0 {
+			return itm
+		}
+	}
+
+	return nil
 }
 
 // Insert ...
@@ -22,19 +33,19 @@ func (ls *List) Insert(values ...Comparable) {
 
 // insert ...
 func (ls *List) insert(value Comparable) {
-	newItm := item{value: value}
+	newItm := Item{value: value}
 	if ls.length == 0 {
-		// New list
 		ls.head = &newItm
 		ls.tail = &newItm
+		ls.length = 1
 	} else {
 		var inserted bool
 		for itm := ls.head; itm != nil && !inserted; itm = itm.next {
 			if 0 < itm.value.Compare(value) {
-				if itm == ls.head {
-					ls.head = &newItm
-				} else {
+				if itm.prev != nil {
 					itm.prev.next = &newItm
+				} else {
+					ls.head = &newItm
 				}
 
 				itm.prev = &newItm
@@ -48,9 +59,13 @@ func (ls *List) insert(value Comparable) {
 			ls.tail.next = &newItm
 			ls.tail = &newItm
 		}
-	}
 
-	ls.length++
+		ls.length++
+	}
+}
+
+func (ls *List) remove(value Comparable) {
+
 }
 
 // Slice ...
