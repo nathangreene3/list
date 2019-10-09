@@ -13,10 +13,14 @@ func New(values ...Comparable) *List {
 	return &ls
 }
 
-// Find ...
+// Find a value.
 func (ls *List) Find(value Comparable) *Item {
+	if ls.length == 0 {
+		return nil
+	}
+
 	for itm := ls.head; itm != nil; itm = itm.next {
-		if itm.value.Compare(value) == 0 {
+		if itm.Value.Compare(value) == 0 {
 			return itm
 		}
 	}
@@ -24,56 +28,104 @@ func (ls *List) Find(value Comparable) *Item {
 	return nil
 }
 
-// Insert ...
+// Insert several values.
 func (ls *List) Insert(values ...Comparable) {
 	for _, value := range values {
 		ls.insert(value)
 	}
 }
 
-// insert ...
+// insert a value.
 func (ls *List) insert(value Comparable) {
-	newItm := Item{value: value}
-	if ls.length == 0 {
-		ls.head = &newItm
-		ls.tail = &newItm
-		ls.length = 1
-	} else {
-		var inserted bool
-		for itm := ls.head; itm != nil && !inserted; itm = itm.next {
-			if 0 < itm.value.Compare(value) {
-				if itm.prev != nil {
-					itm.prev.next = &newItm
+	switch {
+	case ls.length == 0:
+		ls.head = &Item{Value: value}
+		ls.tail = ls.head
+	case 0 < ls.head.Value.Compare(value):
+		ls.head.prev = &Item{
+			Value: value,
+			next:  ls.head,
+		}
+
+		ls.head = ls.head.prev
+	default:
+		for itm := ls.tail; itm != nil; itm = itm.prev {
+			if itm.Value.Compare(value) <= 0 {
+				if itm == ls.tail {
+					ls.tail.next = &Item{
+						Value: value,
+						prev:  ls.tail,
+					}
+
+					ls.tail = ls.tail.next
 				} else {
-					ls.head = &newItm
+					itm.next.prev = &Item{
+						Value: value,
+						prev:  itm,
+						next:  itm.next,
+					}
+
+					itm.next = itm.next.prev
 				}
 
-				itm.prev = &newItm
-				newItm.next = itm
-				inserted = true
+				break
 			}
 		}
+	}
 
-		if !inserted {
-			newItm.prev = ls.tail
-			ls.tail.next = &newItm
-			ls.tail = &newItm
-		}
+	ls.length++
+}
 
-		ls.length++
+// Length of the list.
+func (ls *List) Length() int {
+	return ls.length
+}
+
+// Remove several values. If duplicates exist, they will all be removed.
+func (ls *List) Remove(values ...Comparable) {
+	for _, value := range values {
+		ls.remove(value)
 	}
 }
 
+// remove a value. If duplicates exist, they will all be removed.
 func (ls *List) remove(value Comparable) {
+	for itm := ls.Find(value); itm != nil; itm = ls.Find(value) {
+		switch {
+		case ls.length == 1:
+			ls.head = nil
+			ls.tail = nil
+		case itm == ls.head:
+			ls.head = ls.head.next
+		case itm == ls.tail:
+			ls.tail = ls.tail.prev
+		default:
+			itm.prev.next = itm.next
+			itm.next.prev = itm.prev
+		}
 
+		ls.length--
+	}
 }
 
-// Slice ...
+// Slice comparable values.
 func (ls *List) Slice() []Comparable {
 	s := make([]Comparable, 0, ls.length)
 	for itm := ls.head; itm != nil; itm = itm.next {
-		s = append(s, itm.value)
+		s = append(s, itm.Value)
 	}
 
 	return s
+}
+
+// Map comparable values.
+func (ls *List) Map() map[int]Comparable {
+	m := make(map[int]Comparable)
+	var i int
+	for itm := ls.head; itm != nil; itm = itm.next {
+		m[i] = itm.Value
+		i++
+	}
+
+	return m
 }

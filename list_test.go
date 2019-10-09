@@ -21,8 +21,8 @@ func (n Int) Compare(m Comparable) int {
 
 func TestList(t *testing.T) {
 	var (
-		iters    = 2
-		numItems = 5
+		iters    = 100
+		numItems = 100
 	)
 
 	for i := 0; i < iters; i++ {
@@ -32,8 +32,8 @@ func TestList(t *testing.T) {
 		}
 
 		for itm := ls.head; itm != nil && itm.next != nil; itm = itm.next {
-			if 0 < itm.value.Compare(itm.next.value) {
-				t.Fatalf("expected %v < %v\n", itm.value, itm.next.value)
+			if 0 < itm.Value.Compare(itm.next.Value) {
+				t.Fatalf("expected %v < %v\n", itm.Value, itm.next.Value)
 			}
 		}
 

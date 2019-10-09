@@ -2,6 +2,6 @@ package list
 
 // Item ...
 type Item struct {
-	value      Interface
+	Value      Interface
 	prev, next *Item
 }
