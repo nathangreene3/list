@@ -6,15 +6,20 @@ type List struct {
 	length     int
 }
 
-// New ...
+// New creates a new list of values.
 func New(values ...Comparable) *List {
 	var ls List
 	ls.Insert(values...)
 	return &ls
 }
 
-// Find a value.
-func (ls *List) Find(value Comparable) *Item {
+// Contains returns true if a value is found in a list.
+func (ls *List) Contains(value Comparable) bool {
+	return ls.find(value) != nil
+}
+
+// find an item holding a value.
+func (ls *List) find(value Comparable) *Item {
 	if ls.length == 0 {
 		return nil
 	}
@@ -26,6 +31,25 @@ func (ls *List) Find(value Comparable) *Item {
 	}
 
 	return nil
+}
+
+// Head removes the head value.
+func (ls *List) Head() Comparable {
+	switch ls.length {
+	case 0:
+		return nil
+	case 1:
+		value := ls.head.Value
+		ls.head = nil
+		ls.tail = nil
+		ls.length--
+		return value
+	default:
+		value := ls.head.Value
+		ls.head = ls.head.next
+		ls.length--
+		return value
+	}
 }
 
 // Insert several values.
@@ -81,6 +105,18 @@ func (ls *List) Length() int {
 	return ls.length
 }
 
+// Map comparable values.
+func (ls *List) Map() map[int]Comparable {
+	m := make(map[int]Comparable)
+	var i int
+	for itm := ls.head; itm != nil; itm = itm.next {
+		m[i] = itm.Value
+		i++
+	}
+
+	return m
+}
+
 // Remove several values. If duplicates exist, they will all be removed.
 func (ls *List) Remove(values ...Comparable) {
 	for _, value := range values {
@@ -90,7 +126,7 @@ func (ls *List) Remove(values ...Comparable) {
 
 // remove a value. If duplicates exist, they will all be removed.
 func (ls *List) remove(value Comparable) {
-	for itm := ls.Find(value); itm != nil; itm = ls.Find(value) {
+	for itm := ls.find(value); itm != nil; itm = ls.find(value) {
 		switch {
 		case ls.length == 1:
 			ls.head = nil
@@ -118,14 +154,21 @@ func (ls *List) Slice() []Comparable {
 	return s
 }
 
-// Map comparable values.
-func (ls *List) Map() map[int]Comparable {
-	m := make(map[int]Comparable)
-	var i int
-	for itm := ls.head; itm != nil; itm = itm.next {
-		m[i] = itm.Value
-		i++
+// Tail removes the tail value.
+func (ls *List) Tail() Comparable {
+	switch ls.length {
+	case 0:
+		return nil
+	case 1:
+		value := ls.head.Value
+		ls.head = nil
+		ls.tail = nil
+		ls.length--
+		return value
+	default:
+		value := ls.tail.Value
+		ls.tail = ls.tail.prev
+		ls.length--
+		return value
 	}
-
-	return m
 }
