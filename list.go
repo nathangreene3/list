@@ -1,5 +1,10 @@
 package list
 
+import (
+	"fmt"
+	"strings"
+)
+
 // List ...
 type List struct {
 	head, tail *Item
@@ -31,6 +36,33 @@ func (ls *List) find(value Comparable) *Item {
 	}
 
 	return nil
+}
+
+// RemoveAt the ith value.
+func (ls *List) RemoveAt(i int) Comparable {
+	if i < 0 || ls.length <= i {
+		return nil // panic("index out of range") // TODO: Maybe just return nil?
+	}
+
+	switch i {
+	case 0:
+		return ls.Head()
+	case ls.length - 1:
+		return ls.Tail()
+	default:
+		for itm := ls.head; itm != nil && 0 <= i; itm = itm.next {
+			if i == 0 {
+				itm.prev.next = itm.next
+				itm.next.prev = itm.prev
+				ls.length--
+				return itm.Value
+			}
+
+			i--
+		}
+
+		return nil
+	}
 }
 
 // Head removes the head value.
@@ -152,6 +184,16 @@ func (ls *List) Slice() []Comparable {
 	}
 
 	return s
+}
+
+// String represents a formatted list.
+func (ls *List) String() string {
+	s := make([]string, 0, ls.length)
+	for itm := ls.head; itm != nil; itm = itm.next {
+		s = append(s, fmt.Sprintf("%v", itm.Value))
+	}
+
+	return strings.Join(s, ",")
 }
 
 // Tail removes the tail value.
