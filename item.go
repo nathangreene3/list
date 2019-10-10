@@ -1,7 +1,7 @@
 package list
 
-// Item ...
-type Item struct {
+// item ...
+type item struct {
 	Value      Interface
-	prev, next *Item
+	prev, next *item
 }

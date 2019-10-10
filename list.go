@@ -7,7 +7,7 @@ import (
 
 // List ...
 type List struct {
-	head, tail *Item
+	head, tail *item
 	length     int
 }
 
@@ -24,7 +24,7 @@ func (ls *List) Contains(value Comparable) bool {
 }
 
 // find an item holding a value.
-func (ls *List) find(value Comparable) *Item {
+func (ls *List) find(value Comparable) *item {
 	if ls.length == 0 {
 		return nil
 	}
@@ -95,10 +95,10 @@ func (ls *List) Insert(values ...Comparable) {
 func (ls *List) insert(value Comparable) {
 	switch {
 	case ls.length == 0:
-		ls.head = &Item{Value: value}
+		ls.head = &item{Value: value}
 		ls.tail = ls.head
 	case 0 < ls.head.Value.Compare(value):
-		ls.head.prev = &Item{
+		ls.head.prev = &item{
 			Value: value,
 			next:  ls.head,
 		}
@@ -108,14 +108,14 @@ func (ls *List) insert(value Comparable) {
 		for itm := ls.tail; itm != nil; itm = itm.prev {
 			if itm.Value.Compare(value) <= 0 {
 				if itm == ls.tail {
-					ls.tail.next = &Item{
+					ls.tail.next = &item{
 						Value: value,
 						prev:  ls.tail,
 					}
 
 					ls.tail = ls.tail.next
 				} else {
-					itm.next.prev = &Item{
+					itm.next.prev = &item{
 						Value: value,
 						prev:  itm,
 						next:  itm.next,
