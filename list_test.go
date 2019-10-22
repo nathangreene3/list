@@ -27,6 +27,33 @@ func (n testInt) Compare(m Comparable) int {
 	}
 }
 
+// testStruct implements Interface for testing.
+type testStruct struct {
+	key   int
+	value string
+}
+
+// Compare two test structs.
+func (ts *testStruct) Compare(x Comparable) int {
+	u := x.(*testStruct)
+	switch {
+	// case ts.value < u.value:
+	// 	return -1
+	// case u.value < ts.value:
+	// 	return 1
+	case ts.key < u.key:
+		return -1
+	case u.key < ts.key:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func (ts *testStruct) String() string {
+	return fmt.Sprintf("[%d, %s]", ts.key, ts.value)
+}
+
 func TestList(t *testing.T) {
 	if !seeded {
 		seed = time.Now().Unix()
@@ -89,6 +116,28 @@ func TestRemove(t *testing.T) {
 					t.Fatalf("expected %v to be removed\n", v)
 				}
 			}
+		}
+	}
+}
+
+func TestList2(t *testing.T) {
+	if !seeded {
+		seed = time.Now().Unix()
+		rand.Seed(seed)
+		seeded = true
+	}
+
+	lst := New(
+		&testStruct{key: 2, value: "two"},
+		&testStruct{key: 4, value: "four"},
+		&testStruct{key: 3, value: "three"},
+		&testStruct{key: 5, value: "five"},
+		&testStruct{key: 1, value: "one"},
+	)
+
+	for i := 1; i <= 5; i++ {
+		if v := lst.Contains(&testStruct{key: i}); !v {
+			t.Fatalf("\nexpected %t\nreceived %t\n", true, v)
 		}
 	}
 }
