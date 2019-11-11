@@ -1,4 +1,4 @@
-package list
+package sortedlist
 
 // Interface ...
 type Interface interface {

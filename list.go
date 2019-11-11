@@ -1,146 +1,98 @@
 package list
 
 import (
-	"fmt"
-	"strings"
+	"reflect"
 )
 
-// List ...
+// List is a doubly-linked list.
 type List struct {
 	head, tail *item
 	length     int
 }
 
-// New creates a new list of values.
-func New(values ...Comparable) *List {
+// New list of values.
+func New(values ...interface{}) *List {
 	var ls List
-	ls.Insert(values...)
+	ls.Append(values...)
 	return &ls
 }
 
-// Contains returns true if a value is found in a list.
-func (ls *List) Contains(value Comparable) bool {
-	return ls.find(value) != nil
-}
-
-// find an item holding a value.
-func (ls *List) find(value Comparable) *item {
-	if ls.length == 0 {
-		return nil
-	}
+// Search returns the index a value was found at or the length of the list and
+// whether or not the value was found in the list.
+func (ls *List) Search(value interface{}) (int, bool) {
+	var (
+		i int
+		t = reflect.TypeOf(value)
+	)
 
 	for itm := ls.head; itm != nil; itm = itm.next {
-		if itm.Value.Compare(value) == 0 {
-			return itm
+		if reflect.TypeOf(itm.Value) == t && value == itm.Value {
+			return i, true
 		}
+
+		i++
 	}
 
-	return nil
+	return i, false
 }
 
-// RemoveAt the ith value.
-func (ls *List) RemoveAt(i int) Comparable {
-	if i < 0 || ls.length <= i {
-		return nil // panic("index out of range") // TODO: Maybe just return nil?
+// Append several values into a list.
+func (ls *List) Append(values ...interface{}) {
+	for _, value := range values {
+		ls.InsertAt(ls.length, value)
 	}
+}
 
-	switch i {
-	case 0:
-		return ls.Head()
-	case ls.length - 1:
-		return ls.Tail()
-	default:
-		for itm := ls.head; itm != nil && 0 <= i; itm = itm.next {
-			if i == 0 {
-				itm.prev.next = itm.next
-				itm.next.prev = itm.prev
-				ls.length--
-				return itm.Value
-			}
-
+// InsertAt inserts a value into the ith index.
+func (ls *List) InsertAt(i int, value interface{}) {
+	switch {
+	case i < 0 || ls.length < i:
+		panic("index out of range")
+	case i == ls.length:
+		if ls.length == 0 {
+			// i = length = 0 --> initialize head & tail
+			ls.head = &item{Value: value}
+			ls.tail = ls.head
+		} else {
+			// 0 < i = length --> append as new tail
+			ls.tail.next = &item{Value: value, prev: ls.tail}
+			ls.tail = ls.tail.next
+		}
+	case i == 0:
+		// 0 < length --> prepend as new head
+		ls.head.prev = &item{Value: value, next: ls.head}
+		ls.head = ls.head.prev
+	case i < ls.length:
+		// 0 < i < length --> insert as normal
+		itm := ls.head
+		for ; 0 < i && itm != nil; itm = itm.next {
 			i--
 		}
 
-		return nil
-	}
-}
-
-// Head removes the head value.
-func (ls *List) Head() Comparable {
-	switch ls.length {
-	case 0:
-		return nil
-	case 1:
-		value := ls.head.Value
-		ls.head = nil
-		ls.tail = nil
-		ls.length--
-		return value
-	default:
-		value := ls.head.Value
-		ls.head = ls.head.next
-		ls.length--
-		return value
-	}
-}
-
-// Insert several values.
-func (ls *List) Insert(values ...Comparable) {
-	for _, value := range values {
-		ls.insert(value)
-	}
-}
-
-// insert a value.
-func (ls *List) insert(value Comparable) {
-	switch {
-	case ls.length == 0:
-		ls.head = &item{Value: value}
-		ls.tail = ls.head
-	case 0 < ls.head.Value.Compare(value):
-		ls.head.prev = &item{
+		itm.prev.next = &item{
 			Value: value,
-			next:  ls.head,
+			prev:  itm.prev,
+			next:  itm,
 		}
 
-		ls.head = ls.head.prev
-	default:
-		for itm := ls.tail; itm != nil; itm = itm.prev {
-			if itm.Value.Compare(value) <= 0 {
-				if itm == ls.tail {
-					ls.tail.next = &item{
-						Value: value,
-						prev:  ls.tail,
-					}
-
-					ls.tail = ls.tail.next
-				} else {
-					itm.next.prev = &item{
-						Value: value,
-						prev:  itm,
-						next:  itm.next,
-					}
-
-					itm.next = itm.next.prev
-				}
-
-				break
-			}
-		}
+		itm.prev = itm.prev.next
 	}
 
 	ls.length++
 }
 
-// Length of the list.
+// Length of a list.
 func (ls *List) Length() int {
 	return ls.length
 }
 
-// Map comparable values.
-func (ls *List) Map() map[int]Comparable {
-	m := make(map[int]Comparable)
-	var i int
+// Map a list of values.
+func (ls *List) Map() map[int]interface{} {
+	var (
+		m = make(map[int]interface{})
+		i int
+	)
+
 	for itm := ls.head; itm != nil; itm = itm.next {
 		m[i] = itm.Value
 		i++
@@ -149,68 +101,54 @@ func (ls *List) Map() map[int]Comparable {
 	return m
 }
 
-// Remove several values. If duplicates exist, they will all be removed.
-func (ls *List) Remove(values ...Comparable) {
-	for _, value := range values {
-		ls.remove(value)
-	}
-}
-
-// remove a value. If duplicates exist, they will all be removed.
-func (ls *List) remove(value Comparable) {
-	for itm := ls.find(value); itm != nil; itm = ls.find(value) {
-		switch {
-		case ls.length == 1:
+// RemoveAt the ith value.
+func (ls *List) RemoveAt(i int) interface{} {
+	switch {
+	case i < 0, ls.length <= i:
+		panic("index out of range")
+	case i == 0:
+		// Remove the head
+		value := ls.head.Value
+		if ls.length == 1 {
 			ls.head = nil
 			ls.tail = nil
-		case itm == ls.head:
+		} else {
 			ls.head = ls.head.next
-		case itm == ls.tail:
-			ls.tail = ls.tail.prev
-		default:
-			itm.prev.next = itm.next
-			itm.next.prev = itm.prev
 		}
 
 		ls.length--
+		return value
+	case i+1 == ls.length:
+		// Remove the tail
+		value := ls.tail.Value
+		if ls.length == 1 {
+			ls.head = nil
+			ls.tail = nil
+		} else {
+			ls.tail = ls.tail.prev
+		}
+
+		ls.length--
+		return value
+	default:
+		// Remove a normal item
+		itm := ls.head
+		for ; 0 < i && itm != nil; itm = itm.next {
+			i--
+		}
+
+		itm.prev.next = itm.next
+		itm.next.prev = itm.prev
+		return itm.Value
 	}
 }
 
-// Slice comparable values.
-func (ls *List) Slice() []Comparable {
-	s := make([]Comparable, 0, ls.length)
+// Slice a list of values.
+func (ls *List) Slice() []interface{} {
+	s := make([]interface{}, 0, ls.length)
 	for itm := ls.head; itm != nil; itm = itm.next {
 		s = append(s, itm.Value)
 	}
 
 	return s
-}
-
-// String represents a formatted list.
-func (ls *List) String() string {
-	s := make([]string, 0, ls.length)
-	for itm := ls.head; itm != nil; itm = itm.next {
-		s = append(s, fmt.Sprintf("%v", itm.Value))
-	}
-
-	return strings.Join(s, ",")
-}
-
-// Tail removes the tail value.
-func (ls *List) Tail() Comparable {
-	switch ls.length {
-	case 0:
-		return nil
-	case 1:
-		value := ls.head.Value
-		ls.head = nil
-		ls.tail = nil
-		ls.length--
-		return value
-	default:
-		value := ls.tail.Value
-		ls.tail = ls.tail.prev
-		ls.length--
-		return value
-	}
 }
