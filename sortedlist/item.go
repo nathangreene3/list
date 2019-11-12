@@ -2,6 +2,6 @@ package sortedlist
 
 // item ...
 type item struct {
-	Value      Interface
+	Value      Comparable
 	prev, next *item
 }

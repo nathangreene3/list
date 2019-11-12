@@ -12,6 +12,14 @@ var (
 	seed   int64
 )
 
+func initSeed() {
+	if !seeded {
+		seed = time.Now().Unix()
+		rand.Seed(seed)
+		seeded = true
+	}
+}
+
 // TestInt implements Interface for testing.
 type TestInt int
 
@@ -54,12 +62,8 @@ func (ts *TestStruct) String() string {
 	return fmt.Sprintf("[%d, %s]", ts.key, ts.value)
 }
 
-func TestList(t *testing.T) {
-	if !seeded {
-		seed = time.Now().Unix()
-		rand.Seed(seed)
-		seeded = true
-	}
+func TestSortedList(t *testing.T) {
+	initSeed()
 
 	var (
 		iters    = 100
@@ -67,31 +71,27 @@ func TestList(t *testing.T) {
 	)
 
 	for i := 0; i < iters; i++ {
-		ls := New()
+		sl := New()
 		for j := 0; j < numItems; j++ {
-			ls.Insert(TestInt(rand.Int()))
+			sl.Insert(TestInt(rand.Int()))
 		}
 
-		for itm := ls.head; itm != nil && itm.next != nil; itm = itm.next {
+		for itm := sl.head; itm != nil && itm.next != nil; itm = itm.next {
 			if 0 < itm.Value.Compare(itm.next.Value) {
 				fmt.Printf("seed: %d\n", seed)
 				t.Fatalf("expected %v < %v\n", itm.Value, itm.next.Value)
 			}
 		}
 
-		if s := ls.Slice(); len(s) != ls.length {
+		if s := sl.Slice(); len(s) != sl.length {
 			fmt.Printf("seed: %d\n", seed)
-			t.Fatalf("expected length %d, received %d\n", ls.length, len(s))
+			t.Fatalf("expected length %d, received %d\n", sl.length, len(s))
 		}
 	}
 }
 
 func TestRemove(t *testing.T) {
-	if !seeded {
-		seed = time.Now().Unix()
-		rand.Seed(seed)
-		seeded = true
-	}
+	initSeed()
 
 	var (
 		iters    = 100
@@ -99,19 +99,19 @@ func TestRemove(t *testing.T) {
 	)
 
 	for i := 0; i < iters; i++ {
-		ls := New()
+		sl := New()
 		values := make([]TestInt, 0, numItems)
 		for j := 0; j < numItems; j++ {
 			values = append(values, TestInt(rand.Intn(10)))
-			ls.Insert(values[j])
+			sl.Insert(values[j])
 		}
 
-		if s := ls.Slice(); len(s) != ls.length {
-			t.Fatalf("expected length %d, received %d\n", ls.length, len(s))
+		if s := sl.Slice(); len(s) != sl.length {
+			t.Fatalf("expected length %d, received %d\n", sl.length, len(s))
 		} else {
 			for _, v := range s {
-				ls.Remove(v)
-				if ls.Contains(v) {
+				sl.Remove(v)
+				if sl.Contains(v) {
 					fmt.Printf("seed: %d\n", seed)
 					t.Fatalf("expected %v to be removed\n", v)
 				}
@@ -120,14 +120,10 @@ func TestRemove(t *testing.T) {
 	}
 }
 
-func TestList2(t *testing.T) {
-	if !seeded {
-		seed = time.Now().Unix()
-		rand.Seed(seed)
-		seeded = true
-	}
+func TestSortedList2(t *testing.T) {
+	initSeed()
 
-	lst := New(
+	sl := New(
 		&TestStruct{key: 2, value: "two"},
 		&TestStruct{key: 4, value: "four"},
 		&TestStruct{key: 3, value: "three"},
@@ -136,7 +132,7 @@ func TestList2(t *testing.T) {
 	)
 
 	for i := 1; i <= 5; i++ {
-		if v := lst.Contains(&TestStruct{key: i}); !v {
+		if v := sl.Contains(&TestStruct{key: i}); !v {
 			t.Fatalf("\nexpected %t\nreceived %t\n", true, v)
 		}
 	}

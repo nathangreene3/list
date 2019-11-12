@@ -5,116 +5,91 @@ import (
 	"strings"
 )
 
-// List ...
-type List struct {
+// SortedList is a doubly linked list of sorted values.
+type SortedList struct {
 	head, tail *item
 	length     int
 }
 
-// New creates a new list of values.
-func New(values ...Comparable) *List {
-	var ls List
+// New creates a new sorted list of values.
+func New(values ...Comparable) *SortedList {
+	var ls SortedList
 	ls.Insert(values...)
 	return &ls
 }
 
-// Contains returns true if a value is found in a list.
-func (ls *List) Contains(value Comparable) bool {
-	return ls.find(value) != nil
+// Contains returns true if a value is found in a sorted list.
+func (sl *SortedList) Contains(value Comparable) bool {
+	return sl.find(value) != nil
 }
 
 // find an item holding a value.
-func (ls *List) find(value Comparable) *item {
-	if ls.length == 0 {
-		return nil
-	}
-
-	for itm := ls.head; itm != nil; itm = itm.next {
-		if itm.Value.Compare(value) == 0 {
-			return itm
+func (sl *SortedList) find(value Comparable) *item {
+	if 0 < sl.length {
+		for itm := sl.head; itm != nil; itm = itm.next {
+			if itm.Value.Compare(value) == 0 {
+				return itm
+			}
 		}
 	}
 
 	return nil
 }
 
-// Head removes the head value.
-func (ls *List) Head() Comparable {
-	switch ls.length {
-	case 0:
-		return nil
-	case 1:
-		value := ls.head.Value
-		ls.head = nil
-		ls.tail = nil
-		ls.length--
-		return value
-	default:
-		value := ls.head.Value
-		ls.head = ls.head.next
-		ls.length--
-		return value
-	}
-}
-
 // Insert several values.
-func (ls *List) Insert(values ...Comparable) {
+func (sl *SortedList) Insert(values ...Comparable) {
 	for _, value := range values {
-		ls.insert(value)
-	}
-}
+		switch {
+		case sl.length == 0:
+			sl.head = &item{Value: value}
+			sl.tail = sl.head
+		case 0 < sl.head.Value.Compare(value):
+			sl.head.prev = &item{
+				Value: value,
+				next:  sl.head,
+			}
 
-// insert a value.
-func (ls *List) insert(value Comparable) {
-	switch {
-	case ls.length == 0:
-		ls.head = &item{Value: value}
-		ls.tail = ls.head
-	case 0 < ls.head.Value.Compare(value):
-		ls.head.prev = &item{
-			Value: value,
-			next:  ls.head,
-		}
+			sl.head = sl.head.prev
+		default:
+			itm := sl.tail
+			for ; itm != nil && 0 < itm.Value.Compare(value); itm = itm.prev {
+			}
 
-		ls.head = ls.head.prev
-	default:
-		for itm := ls.tail; itm != nil; itm = itm.prev {
-			if itm.Value.Compare(value) <= 0 {
-				if itm == ls.tail {
-					ls.tail.next = &item{
-						Value: value,
-						prev:  ls.tail,
-					}
-
-					ls.tail = ls.tail.next
-				} else {
-					itm.next.prev = &item{
-						Value: value,
-						prev:  itm,
-						next:  itm.next,
-					}
-
-					itm.next = itm.next.prev
+			if itm == sl.tail {
+				sl.tail.next = &item{
+					Value: value,
+					prev:  sl.tail,
 				}
 
-				break
+				sl.tail = sl.tail.next
+			} else {
+				itm.next.prev = &item{
+					Value: value,
+					prev:  itm,
+					next:  itm.next,
+				}
+
+				itm.next = itm.next.prev
 			}
 		}
-	}
 
-	ls.length++
+		sl.length++
+	}
 }
 
-// Length of the list.
-func (ls *List) Length() int {
-	return ls.length
+// Length of the sorted list.
+func (sl *SortedList) Length() int {
+	return sl.length
 }
 
 // Map comparable values.
-func (ls *List) Map() map[int]Comparable {
-	m := make(map[int]Comparable)
-	var i int
-	for itm := ls.head; itm != nil; itm = itm.next {
+func (sl *SortedList) Map() map[int]Comparable {
+	var (
+		m = make(map[int]Comparable)
+		i int
+	)
+
+	for itm := sl.head; itm != nil; itm = itm.next {
 		m[i] = itm.Value
 		i++
 	}
@@ -123,49 +98,71 @@ func (ls *List) Map() map[int]Comparable {
 }
 
 // Remove several values. If duplicates exist, they will all be removed.
-func (ls *List) Remove(values ...Comparable) {
+func (sl *SortedList) Remove(values ...Comparable) {
 	for _, value := range values {
-		ls.remove(value)
+		sl.remove(value)
 	}
 }
 
 // remove a value. If duplicates exist, they will all be removed.
-func (ls *List) remove(value Comparable) {
-	for itm := ls.find(value); itm != nil; itm = ls.find(value) {
+func (sl *SortedList) remove(value Comparable) {
+	for itm := sl.find(value); itm != nil; itm = sl.find(value) {
 		switch {
-		case ls.length == 1:
-			ls.head = nil
-			ls.tail = nil
-		case itm == ls.head:
-			ls.head = ls.head.next
-		case itm == ls.tail:
-			ls.tail = ls.tail.prev
+		case sl.length == 1:
+			sl.head = nil
+			sl.tail = nil
+		case itm == sl.head:
+			sl.head = sl.head.next
+		case itm == sl.tail:
+			sl.tail = sl.tail.prev
 		default:
 			itm.prev.next = itm.next
 			itm.next.prev = itm.prev
 		}
 
-		ls.length--
+		sl.length--
 	}
 }
 
 // RemoveAt the ith value.
-func (ls *List) RemoveAt(i int) Comparable {
-	if i < 0 || ls.length <= i {
-		return nil // panic("index out of range") // TODO: Maybe just return nil?
+func (sl *SortedList) RemoveAt(i int) Comparable {
+	if i < 0 || sl.length <= i {
+		panic("index out of range")
 	}
 
 	switch i {
 	case 0:
-		return ls.Head()
-	case ls.length - 1:
-		return ls.Tail()
+		if sl.length == 1 {
+			value := sl.head.Value
+			sl.head = nil
+			sl.tail = nil
+			sl.length--
+			return value
+		}
+
+		value := sl.head.Value
+		sl.head = sl.head.next
+		sl.length--
+		return value
+	case sl.length - 1:
+		if sl.length == 1 {
+			value := sl.head.Value
+			sl.head = nil
+			sl.tail = nil
+			sl.length--
+			return value
+		}
+
+		value := sl.tail.Value
+		sl.tail = sl.tail.prev
+		sl.length--
+		return value
 	default:
-		for itm := ls.head; itm != nil && i < ls.length; itm = itm.next {
+		for itm := sl.head; itm != nil && i < sl.length; itm = itm.next {
 			if i == 0 {
 				itm.prev.next = itm.next
 				itm.next.prev = itm.prev
-				ls.length--
+				sl.length--
 				return itm.Value
 			}
 
@@ -177,40 +174,21 @@ func (ls *List) RemoveAt(i int) Comparable {
 }
 
 // Slice comparable values.
-func (ls *List) Slice() []Comparable {
-	s := make([]Comparable, 0, ls.length)
-	for itm := ls.head; itm != nil; itm = itm.next {
+func (sl *SortedList) Slice() []Comparable {
+	s := make([]Comparable, 0, sl.length)
+	for itm := sl.head; itm != nil; itm = itm.next {
 		s = append(s, itm.Value)
 	}
 
 	return s
 }
 
-// String represents a formatted list.
-func (ls *List) String() string {
-	s := make([]string, 0, ls.length)
-	for itm := ls.head; itm != nil; itm = itm.next {
+// String represents a formatted sorted list.
+func (sl *SortedList) String() string {
+	s := make([]string, 0, sl.length)
+	for itm := sl.head; itm != nil; itm = itm.next {
 		s = append(s, fmt.Sprintf("%v", itm.Value))
 	}
 
 	return strings.Join(s, ",")
-}
-
-// Tail removes the tail value.
-func (ls *List) Tail() Comparable {
-	switch ls.length {
-	case 0:
-		return nil
-	case 1:
-		value := ls.head.Value
-		ls.head = nil
-		ls.tail = nil
-		ls.length--
-		return value
-	default:
-		value := ls.tail.Value
-		ls.tail = ls.tail.prev
-		ls.length--
-		return value
-	}
 }

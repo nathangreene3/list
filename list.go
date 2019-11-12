@@ -1,7 +1,9 @@
 package list
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 )
 
 // List is a doubly-linked list.
@@ -17,25 +19,6 @@ func New(values ...interface{}) *List {
 	return &ls
 }
 
-// Search returns the index a value was found at or the length of the list and
-// whether or not the value was found in the list.
-func (ls *List) Search(value interface{}) (int, bool) {
-	var (
-		i int
-		t = reflect.TypeOf(value)
-	)
-
-	for itm := ls.head; itm != nil; itm = itm.next {
-		if reflect.TypeOf(itm.Value) == t && value == itm.Value {
-			return i, true
-		}
-
-		i++
-	}
-
-	return i, false
-}
-
 // Append several values into a list.
 func (ls *List) Append(values ...interface{}) {
 	for _, value := range values {
@@ -45,10 +28,12 @@ func (ls *List) Append(values ...interface{}) {
 
 // InsertAt inserts a value into the ith index.
 func (ls *List) InsertAt(i int, value interface{}) {
-	switch {
-	case i < 0 || ls.length < i:
+	if i < 0 || ls.length < i {
 		panic("index out of range")
-	case i == ls.length:
+	}
+
+	switch i {
+	case ls.length:
 		if ls.length == 0 {
 			// i = length = 0 --> initialize head & tail
 			ls.head = &item{Value: value}
@@ -58,11 +43,11 @@ func (ls *List) InsertAt(i int, value interface{}) {
 			ls.tail.next = &item{Value: value, prev: ls.tail}
 			ls.tail = ls.tail.next
 		}
-	case i == 0:
+	case 0:
 		// 0 < length --> prepend as new head
 		ls.head.prev = &item{Value: value, next: ls.head}
 		ls.head = ls.head.prev
-	case i < ls.length:
+	default:
 		// 0 < i < length --> insert as normal
 		itm := ls.head
 		for ; 0 < i && itm != nil; itm = itm.next {
@@ -103,10 +88,12 @@ func (ls *List) Map() map[int]interface{} {
 
 // RemoveAt the ith value.
 func (ls *List) RemoveAt(i int) interface{} {
-	switch {
-	case i < 0, ls.length <= i:
+	if i < 0 || ls.length <= i {
 		panic("index out of range")
-	case i == 0:
+	}
+
+	switch i {
+	case 0:
 		// Remove the head
 		value := ls.head.Value
 		if ls.length == 1 {
@@ -118,7 +105,7 @@ func (ls *List) RemoveAt(i int) interface{} {
 
 		ls.length--
 		return value
-	case i+1 == ls.length:
+	case ls.length - 1:
 		// Remove the tail
 		value := ls.tail.Value
 		if ls.length == 1 {
@@ -143,6 +130,25 @@ func (ls *List) RemoveAt(i int) interface{} {
 	}
 }
 
+// Search returns the index a value was found at or the length of the list and
+// whether or not the value was found in the list.
+func (ls *List) Search(value interface{}) (int, bool) {
+	var (
+		i int
+		t = reflect.TypeOf(value)
+	)
+
+	for itm := ls.head; itm != nil; itm = itm.next {
+		if reflect.TypeOf(itm.Value) == t && value == itm.Value {
+			return i, true
+		}
+
+		i++
+	}
+
+	return i, false
+}
+
 // Slice a list of values.
 func (ls *List) Slice() []interface{} {
 	s := make([]interface{}, 0, ls.length)
@@ -151,4 +157,14 @@ func (ls *List) Slice() []interface{} {
 	}
 
 	return s
+}
+
+// String represents a formatted list.
+func (ls *List) String() string {
+	s := make([]string, 0, ls.length)
+	for itm := ls.head; itm != nil; itm = itm.next {
+		s = append(s, fmt.Sprintf("%v", itm.Value))
+	}
+
+	return strings.Join(s, ",")
 }
