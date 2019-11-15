@@ -45,21 +45,12 @@ func (ls *List) InsertAt(i int, value interface{}) {
 		}
 	case 0:
 		// 0 < length --> prepend as new head
-		ls.head.prev = &item{Value: value, next: ls.head}
+		ls.head.prev = newItem(value, nil, ls.head)
 		ls.head = ls.head.prev
 	default:
 		// 0 < i < length --> insert as normal
-		itm := ls.head
-		for ; 0 < i && itm != nil; itm = itm.next {
-			i--
-		}
-
-		itm.prev.next = &item{
-			Value: value,
-			prev:  itm.prev,
-			next:  itm,
-		}
-
+		itm := ls.head.getFrom(i)
+		itm.prev.next = newItem(value, itm.prev, itm)
 		itm.prev = itm.prev.next
 	}
 
@@ -119,14 +110,54 @@ func (ls *List) RemoveAt(i int) interface{} {
 		return value
 	default:
 		// Remove a normal item
-		itm := ls.head
-		for ; 0 < i && itm != nil; itm = itm.next {
-			i--
-		}
-
+		itm := ls.head.getFrom(i)
 		itm.prev.next = itm.next
 		itm.next.prev = itm.prev
 		return itm.Value
+	}
+}
+
+// Reverse a subrange of a list.
+func (ls *List) Reverse(i, j int) {
+	if j < i {
+		i, j = j, i
+	}
+
+	itmI := ls.head.getFrom(i)
+	itmJ := itmI.getFrom(j - i)
+	for i < j {
+		itmI.Value, itmJ.Value = itmJ.Value, itmI.Value
+		itmI, itmJ = itmI.next, itmJ.prev
+		i++
+		j--
+	}
+}
+
+// RotateLeft moves the head to the tail.
+func (ls *List) RotateLeft() {
+	if 1 < ls.length {
+		ls.head.prev = ls.tail
+		ls.tail.next = ls.head
+
+		ls.head = ls.head.next
+		ls.tail = ls.tail.next
+
+		ls.head.prev = nil
+		ls.tail.next = nil
+	}
+}
+
+// RotateRight moves the tail to the head.
+func (ls *List) RotateRight() {
+	if 1 < ls.length {
+		ls.head.prev = ls.tail
+		ls.tail.next = ls.head
+
+		ls.head = ls.head.prev
+		ls.tail = ls.tail.prev
+
+		ls.head.prev = nil
+		ls.tail.next = nil
 	}
 }
 
@@ -167,4 +198,15 @@ func (ls *List) String() string {
 	}
 
 	return strings.Join(s, ",")
+}
+
+// Swap two values.
+func (ls *List) Swap(i, j int) {
+	if j < i {
+		i, j = j, i
+	}
+
+	itmI := ls.head.getFrom(i)
+	itmJ := itmI.getFrom(j - i)
+	itmI.Value, itmJ.Value = itmJ.Value, itmI.Value
 }

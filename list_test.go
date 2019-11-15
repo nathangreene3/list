@@ -1,7 +1,6 @@
 package list
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -29,32 +28,69 @@ func TestList(t *testing.T) {
 	)
 
 	for i := 0; i < iters; i++ {
-		ls := New()
-		nums := make([]int, 0, numItems)
-		for j := 0; j < numItems; j++ {
-			x := rand.Int()
-			ls.Append(x)
-			nums = append(nums, x)
-		}
-
 		var (
-			itm = ls.head
-			j   int
+			ls   = New()
+			nums = rand.Perm(numItems)
 		)
 
-		for ; j < numItems && itm != nil && itm.next != nil; itm = itm.next {
-			index, ok := ls.Search(nums[j])
-			if j != index || !ok {
-				fmt.Printf("seed: %d\n", seed)
-				t.Fatalf("\nexpected (%d, %t)\nreceived (%d, %t)\n", j, true, index, ok)
+		for _, x := range nums {
+			ls.Append(x)
+		}
+
+		// Test search
+		itm := ls.head
+		for j := 0; j < numItems && itm != nil && itm.next != nil; itm = itm.next {
+			if index, ok := ls.Search(nums[j]); j != index || !ok {
+				t.Fatalf("\nseed: %d\nexpected (%d, %t)\nreceived (%d, %t)\n", seed, j, true, index, ok)
 			}
 
 			j++
 		}
 
-		if s := ls.Slice(); len(s) != ls.length {
-			fmt.Printf("seed: %d\n", seed)
-			t.Fatalf("\nexpected length %d, received %d\n", ls.length, len(s))
+		// Test slice & map
+		s, m := ls.Slice(), ls.Map()
+		switch {
+		case len(s) != numItems:
+			t.Fatalf("\nseed: %d\nexpected length %d\nreceived %d\n", seed, numItems, len(s))
+		case len(m) != numItems:
+			t.Fatalf("\nseed: %d\nexpected length %d\nreceived %d\n", seed, numItems, len(m))
+		}
+
+		for i := 0; i < numItems; i++ {
+			switch {
+			case nums[i] != s[i].(int):
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, i, nums[i], s[i].(int))
+			case nums[i] != m[i].(int):
+				t.Fatalf("\nseed: %d\nexpected m[%d] = %d\nreceived %d\n", seed, i, nums[i], m[i].(int))
+			}
+		}
+
+		// Test rotate & swap
+		nums = append(nums[1:], nums[0]) // rotate left
+		ls.RotateLeft()
+		s = ls.Slice()
+		for i := 0; i < numItems; i++ {
+			if nums[i] != s[i] {
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, i, nums[i], s[i].(int))
+			}
+		}
+
+		nums = append([]int{nums[numItems-1]}, nums[:numItems-1]...) // rotate right
+		ls.RotateRight()
+		s = ls.Slice()
+		for i := 0; i < numItems; i++ {
+			if nums[i] != s[i] {
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, i, nums[i], s[i].(int))
+			}
+		}
+
+		i, j := rand.Intn(numItems), rand.Intn(numItems)
+		nums[i], nums[j] = nums[j], nums[i]
+		ls.Swap(i, j)
+		for i := 0; i < numItems; i++ {
+			if nums[i] != s[i] {
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, i, nums[i], s[i].(int))
+			}
 		}
 	}
 }
