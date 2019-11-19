@@ -19,19 +19,19 @@ func initSeed() {
 	}
 }
 
-func TestList(t *testing.T) {
-	initSeed()
+func TestSearchList(t *testing.T) {
+	// initSeed()
 
-	var (
-		iters    = 100
-		numItems = 100
-	)
-
-	for i := 0; i < iters; i++ {
+	var numItems = 100
+	for iters := 0; iters < 1; iters++ {
 		var (
 			ls   = New()
-			nums = rand.Perm(numItems)
+			nums = make([]int, 0, numItems)
 		)
+
+		for j := 0; j < numItems; j++ {
+			nums = append(nums, rand.Intn(10))
+		}
 
 		for _, x := range nums {
 			ls.Append(x)
@@ -56,12 +56,12 @@ func TestList(t *testing.T) {
 			t.Fatalf("\nseed: %d\nexpected length %d\nreceived %d\n", seed, numItems, len(m))
 		}
 
-		for i := 0; i < numItems; i++ {
+		for j := 0; j < numItems; j++ {
 			switch {
-			case nums[i] != s[i].(int):
-				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, i, nums[i], s[i].(int))
-			case nums[i] != m[i].(int):
-				t.Fatalf("\nseed: %d\nexpected m[%d] = %d\nreceived %d\n", seed, i, nums[i], m[i].(int))
+			case nums[j] != s[j].(int):
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, j, nums[j], s[j].(int))
+			case nums[j] != m[j].(int):
+				t.Fatalf("\nseed: %d\nexpected m[%d] = %d\nreceived %d\n", seed, j, nums[j], m[j].(int))
 			}
 		}
 
@@ -69,9 +69,9 @@ func TestList(t *testing.T) {
 		nums = append(nums[1:], nums[0]) // rotate left
 		ls.RotateLeft()
 		s = ls.Slice()
-		for i := 0; i < numItems; i++ {
-			if nums[i] != s[i] {
-				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, i, nums[i], s[i].(int))
+		for j := 0; j < numItems; j++ {
+			if nums[j] != s[j] {
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, j, nums[j], s[j].(int))
 			}
 		}
 
@@ -84,12 +84,78 @@ func TestList(t *testing.T) {
 			}
 		}
 
-		i, j := rand.Intn(numItems), rand.Intn(numItems)
-		nums[i], nums[j] = nums[j], nums[i]
-		ls.Swap(i, j)
+		a, b := rand.Intn(numItems), rand.Intn(numItems)
+		nums[a], nums[b] = nums[b], nums[a]
+		ls.Swap(a, b)
+		for j := 0; j < numItems; j++ {
+			if nums[j] != s[j] {
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, j, nums[j], s[j].(int))
+			}
+		}
+	}
+}
+
+func TestSliceMapList(t *testing.T) {
+	// initSeed()
+
+	var numItems = 100
+	for iters := 0; iters < 1; iters++ {
+		var (
+			ls   = New()
+			nums = make([]int, 0, numItems)
+		)
+
+		for j := 0; j < numItems; j++ {
+			nums = append(nums, rand.Intn(10))
+		}
+
+		for _, x := range nums {
+			ls.Append(x)
+		}
+
+		// Test slice & map
+		s, m := ls.Slice(), ls.Map()
+		switch {
+		case len(s) != numItems:
+			t.Fatalf("\nseed: %d\nexpected length %d\nreceived %d\n", seed, numItems, len(s))
+		case len(m) != numItems:
+			t.Fatalf("\nseed: %d\nexpected length %d\nreceived %d\n", seed, numItems, len(m))
+		}
+
+		for j := 0; j < numItems; j++ {
+			switch {
+			case nums[j] != s[j].(int):
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, j, nums[j], s[j].(int))
+			case nums[j] != m[j].(int):
+				t.Fatalf("\nseed: %d\nexpected m[%d] = %d\nreceived %d\n", seed, j, nums[j], m[j].(int))
+			}
+		}
+
+		// Test rotate & swap
+		nums = append(nums[1:], nums[0]) // rotate left
+		ls.RotateLeft()
+		s = ls.Slice()
+		for j := 0; j < numItems; j++ {
+			if nums[j] != s[j] {
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, j, nums[j], s[j].(int))
+			}
+		}
+
+		nums = append([]int{nums[numItems-1]}, nums[:numItems-1]...) // rotate right
+		ls.RotateRight()
+		s = ls.Slice()
 		for i := 0; i < numItems; i++ {
 			if nums[i] != s[i] {
 				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, i, nums[i], s[i].(int))
+			}
+		}
+
+		a, b := rand.Intn(numItems), rand.Intn(numItems)
+		nums[a], nums[b] = nums[b], nums[a]
+		ls.Swap(a, b)
+		for j := 0; j < numItems; j++ {
+			if nums[j] != s[j] {
+				t.Fatalf("\nseed: %d\nexpected s[%d] = %d\nreceived %d\n", seed, j, nums[j], s[j].(int))
 			}
 		}
 	}

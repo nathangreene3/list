@@ -2,7 +2,6 @@ package list
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 )
 
@@ -77,6 +76,37 @@ func (ls *List) Map() map[int]interface{} {
 	return m
 }
 
+// Remove all instances of a given value from a list of values.
+func (ls *List) Remove(value interface{}) {
+	for itm := ls.head; itm != nil; itm = itm.next {
+		if itm.contains(value) {
+			switch itm {
+			case ls.head:
+				if ls.length == 1 {
+					ls.head = nil
+					ls.tail = nil
+				} else {
+					ls.head = ls.head.next
+					ls.head.prev = nil
+				}
+			case ls.tail:
+				if ls.length == 1 {
+					ls.head = nil
+					ls.tail = nil
+				} else {
+					ls.tail = ls.tail.prev
+					ls.tail.next = nil
+				}
+			default:
+				itm.prev.next = itm.next
+				itm.next.prev = itm.prev
+			}
+
+			ls.length--
+		}
+	}
+}
+
 // RemoveAt the ith value.
 func (ls *List) RemoveAt(i int) interface{} {
 	if i < 0 || ls.length <= i {
@@ -92,6 +122,7 @@ func (ls *List) RemoveAt(i int) interface{} {
 			ls.tail = nil
 		} else {
 			ls.head = ls.head.next
+			ls.head.prev = nil
 		}
 
 		ls.length--
@@ -104,6 +135,7 @@ func (ls *List) RemoveAt(i int) interface{} {
 			ls.tail = nil
 		} else {
 			ls.tail = ls.tail.prev
+			ls.tail.next = nil
 		}
 
 		ls.length--
@@ -164,13 +196,9 @@ func (ls *List) RotateRight() {
 // Search returns the index a value was found at or the length of the list and
 // whether or not the value was found in the list.
 func (ls *List) Search(value interface{}) (int, bool) {
-	var (
-		i int
-		t = reflect.TypeOf(value)
-	)
-
+	var i int
 	for itm := ls.head; itm != nil; itm = itm.next {
-		if reflect.TypeOf(itm.Value) == t && value == itm.Value {
+		if itm.contains(value) {
 			return i, true
 		}
 
