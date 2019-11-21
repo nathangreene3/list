@@ -2,14 +2,25 @@ package list
 
 import "reflect"
 
-// item ...
+// item holds a value and references the previous and next items, if any.
 type item struct {
 	Value      interface{}
 	prev, next *item
 }
 
+// newItem returns a new item.
 func newItem(value interface{}, prev, next *item) *item {
 	return &item{Value: value, prev: prev, next: next}
+}
+
+// copy an item.
+func (itm *item) copy() *item {
+	return &item{Value: itm.Value, prev: itm.prev, next: itm.next}
+}
+
+// equals compares two items.
+func (itm *item) equals(item *item) bool {
+	return itm.contains(item.Value) && itm.prev == item.prev && itm.next == item.next
 }
 
 // getFrom returns the ith item from a starting item.

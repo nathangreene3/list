@@ -25,6 +25,35 @@ func (ls *List) Append(values ...interface{}) {
 	}
 }
 
+// Copy ...
+func (ls *List) Copy() *List {
+	var cpy List
+	for itm := ls.head; itm != nil; itm = itm.next {
+		cpy.InsertAt(cpy.length, itm.Value)
+	}
+
+	return &cpy
+}
+
+// Equal ...
+func (ls *List) Equal(list *List) bool {
+	if ls.length != list.length {
+		return false
+	}
+
+	itm0, itm1 := ls.head, list.head
+	for itm0 != nil && itm1 != nil {
+		if !itm0.equals(itm1) {
+			return false
+		}
+
+		itm0 = itm0.next
+		itm1 = itm1.next
+	}
+
+	return true
+}
+
 // InsertAt inserts a value into the ith index.
 func (ls *List) InsertAt(i int, value interface{}) {
 	if i < 0 || ls.length < i {
@@ -54,6 +83,15 @@ func (ls *List) InsertAt(i int, value interface{}) {
 	}
 
 	ls.length++
+}
+
+// Join several lists into one list.
+func (ls *List) Join(lists ...*List) {
+	for _, list := range lists {
+		for itm := list.head; itm != nil; itm = itm.next {
+			ls.InsertAt(ls.length, itm.Value)
+		}
+	}
 }
 
 // Length of a list.
@@ -225,7 +263,7 @@ func (ls *List) String() string {
 		s = append(s, fmt.Sprintf("%v", itm.Value))
 	}
 
-	return strings.Join(s, ",")
+	return "[" + strings.Join(s, " ") + "]"
 }
 
 // Swap two values.
