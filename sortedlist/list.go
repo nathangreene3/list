@@ -12,10 +12,10 @@ type SortedList struct {
 }
 
 // New creates a new sorted list of values.
-func New(values ...Comparable) *SortedList {
+func New(values ...Comparable) SortedList {
 	var ls SortedList
 	ls.Insert(values...)
-	return &ls
+	return ls
 }
 
 // Contains returns true if a value is found in a sorted list.
@@ -25,11 +25,9 @@ func (sl *SortedList) Contains(value Comparable) bool {
 
 // find an item holding a value.
 func (sl *SortedList) find(value Comparable) *item {
-	if 0 < sl.length {
-		for itm := sl.head; itm != nil; itm = itm.next {
-			if itm.Value.Compare(value) == 0 {
-				return itm
-			}
+	for itm := sl.head; itm != nil; itm = itm.next {
+		if itm.Value.Compare(value) == 0 {
+			return itm
 		}
 	}
 
@@ -41,14 +39,10 @@ func (sl *SortedList) Insert(values ...Comparable) {
 	for _, value := range values {
 		switch {
 		case sl.length == 0:
-			sl.head = &item{Value: value}
+			sl.head = newItem(value, nil, nil)
 			sl.tail = sl.head
 		case 0 < sl.head.Value.Compare(value):
-			sl.head.prev = &item{
-				Value: value,
-				next:  sl.head,
-			}
-
+			sl.head.prev = newItem(value, nil, sl.head)
 			sl.head = sl.head.prev
 		default:
 			itm := sl.tail
@@ -56,19 +50,10 @@ func (sl *SortedList) Insert(values ...Comparable) {
 			}
 
 			if itm == sl.tail {
-				sl.tail.next = &item{
-					Value: value,
-					prev:  sl.tail,
-				}
-
+				sl.tail.next = newItem(value, sl.tail, nil)
 				sl.tail = sl.tail.next
 			} else {
-				itm.next.prev = &item{
-					Value: value,
-					prev:  itm,
-					next:  itm.next,
-				}
-
+				itm.next.prev = newItem(value, itm, itm.next)
 				itm.next = itm.next.prev
 			}
 		}
@@ -106,6 +91,7 @@ func (sl *SortedList) Remove(values ...Comparable) {
 
 // remove a value. If duplicates exist, they will all be removed.
 func (sl *SortedList) remove(value Comparable) {
+	// TODO: This could be improved by removing find
 	for itm := sl.find(value); itm != nil; itm = sl.find(value) {
 		switch {
 		case sl.length == 1:
@@ -190,5 +176,5 @@ func (sl *SortedList) String() string {
 		s = append(s, fmt.Sprintf("%v", itm.Value))
 	}
 
-	return strings.Join(s, ",")
+	return "[" + strings.Join(s, " ") + "]"
 }

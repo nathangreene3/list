@@ -2,7 +2,7 @@ package list
 
 import "reflect"
 
-// item holds a value and references the previous and next items, if any.
+// item holds a value and references the previous and next items.
 type item struct {
 	Value      interface{}
 	prev, next *item
@@ -20,7 +20,7 @@ func (itm *item) copy() *item {
 
 // equals compares two items.
 func (itm *item) equals(item *item) bool {
-	return itm.contains(item.Value) && itm.prev == item.prev && itm.next == item.next
+	return itm.contains(item.Value)
 }
 
 // getFrom returns the ith item from a starting item.

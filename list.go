@@ -12,10 +12,10 @@ type List struct {
 }
 
 // New list of values.
-func New(values ...interface{}) *List {
+func New(values ...interface{}) List {
 	var ls List
 	ls.Append(values...)
-	return &ls
+	return ls
 }
 
 // Append several values into a list.
@@ -25,18 +25,31 @@ func (ls *List) Append(values ...interface{}) {
 	}
 }
 
-// Copy ...
-func (ls *List) Copy() *List {
+// Compare two lists. Equality is not guarenteed if zero is returned.
+func (ls *List) Compare(list List) int {
+	m, n := ls.length, list.length
+	switch {
+	case m < n:
+		return -1
+	case n < m:
+		return 1
+	default:
+		return 0
+	}
+}
+
+// Copy a list.
+func (ls *List) Copy() List {
 	var cpy List
 	for itm := ls.head; itm != nil; itm = itm.next {
 		cpy.InsertAt(cpy.length, itm.Value)
 	}
 
-	return &cpy
+	return cpy
 }
 
-// Equal ...
-func (ls *List) Equal(list *List) bool {
+// Equal compares two lists for equality.
+func (ls *List) Equal(list List) bool {
 	if ls.length != list.length {
 		return false
 	}
@@ -86,7 +99,7 @@ func (ls *List) InsertAt(i int, value interface{}) {
 }
 
 // Join several lists into one list.
-func (ls *List) Join(lists ...*List) {
+func (ls *List) Join(lists ...List) {
 	for _, list := range lists {
 		for itm := list.head; itm != nil; itm = itm.next {
 			ls.InsertAt(ls.length, itm.Value)
@@ -264,6 +277,22 @@ func (ls *List) String() string {
 	}
 
 	return "[" + strings.Join(s, " ") + "]"
+}
+
+// string2 represents a formmated list. TODO: Decide if this is better.
+func (ls *List) string2() string {
+	var (
+		b   strings.Builder
+		itm = ls.head
+	)
+
+	b.WriteString(fmt.Sprintf("[%v", itm.Value))
+	for ; itm != nil; itm = itm.next {
+		b.WriteString(fmt.Sprintf(", %v", itm.Value))
+	}
+
+	b.WriteByte(']')
+	return b.String()
 }
 
 // Swap two values.
