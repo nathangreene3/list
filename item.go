@@ -13,6 +13,13 @@ func newItem(value interface{}, prev, next *item) *item {
 	return &item{Value: value, prev: prev, next: next}
 }
 
+// contains returns true if an item holds a value that is the same type and
+// equal to a given value.
+func (itm *item) contains(value interface{}) bool {
+	v := itm.Value
+	return reflect.TypeOf(v) == reflect.TypeOf(value) && v == value
+}
+
 // copy an item.
 func (itm *item) copy() *item {
 	return &item{Value: itm.Value, prev: itm.prev, next: itm.next}
@@ -31,11 +38,4 @@ func (itm *item) getFrom(i int) *item {
 	}
 
 	return itm
-}
-
-// contains returns true if an item holds a value that is the same type and
-// equal to a given value.
-func (itm *item) contains(value interface{}) bool {
-	v := itm.Value
-	return reflect.TypeOf(v) == reflect.TypeOf(value) && v == value
 }

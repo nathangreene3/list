@@ -25,19 +25,6 @@ func (ls *List) Append(values ...interface{}) {
 	}
 }
 
-// Compare two lists. Equality is not guarenteed if zero is returned.
-func (ls *List) Compare(list List) int {
-	m, n := ls.length, list.length
-	switch {
-	case m < n:
-		return -1
-	case n < m:
-		return 1
-	default:
-		return 0
-	}
-}
-
 // Copy a list.
 func (ls *List) Copy() List {
 	var cpy List

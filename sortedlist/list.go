@@ -18,16 +18,49 @@ func New(values ...Comparable) SortedList {
 	return ls
 }
 
+// Copy a sorted list.
+func (sl *SortedList) Copy() SortedList {
+	var cpy SortedList
+	for itm := sl.head; itm != nil; itm = itm.next {
+		cpy.Insert(itm.Value)
+	}
+
+	return cpy
+}
+
 // Contains returns true if a value is found in a sorted list.
 func (sl *SortedList) Contains(value Comparable) bool {
 	return sl.find(value) != nil
 }
 
+// Equal returns true if two sorted lists are equal.
+func (sl *SortedList) Equal(sortedList SortedList) bool {
+	if sl.length != sortedList.length {
+		return false
+	}
+
+	itm0, itm1 := sl.head, sortedList.head
+	for itm0 != nil && itm1 != nil {
+		if !itm0.equals(itm1) {
+			return false
+		}
+
+		itm0 = itm0.next
+		itm1 = itm1.next
+	}
+
+	return true
+}
+
 // find an item holding a value.
 func (sl *SortedList) find(value Comparable) *item {
 	for itm := sl.head; itm != nil; itm = itm.next {
-		if itm.Value.Compare(value) == 0 {
+		c := itm.compare(value)
+		switch {
+		case c == 0:
 			return itm
+		case 0 < c:
+			return nil
 		}
 	}
 
@@ -62,6 +95,15 @@ func (sl *SortedList) Insert(values ...Comparable) {
 	}
 }
 
+// Join several sorted lists into one sorted list.
+func (sl *SortedList) Join(sortedLists ...SortedList) {
+	for _, sortedList := range sortedLists {
+		for itm := sortedList.head; itm != nil; itm = itm.next {
+			sl.Insert(itm.Value)
+		}
+	}
+}
+
 // Length of the sorted list.
 func (sl *SortedList) Length() int {
 	return sl.length
@@ -91,8 +133,7 @@ func (sl *SortedList) Remove(values ...Comparable) {
 
 // remove a value. If duplicates exist, they will all be removed.
 func (sl *SortedList) remove(value Comparable) {
-	// TODO: This could be improved by removing find
-	for itm := sl.find(value); itm != nil; itm = sl.find(value) {
+	for itm := sl.find(value); itm != nil && itm.Value == value; itm = itm.next {
 		switch {
 		case sl.length == 1:
 			sl.head = nil
@@ -105,8 +146,6 @@ func (sl *SortedList) remove(value Comparable) {
 			itm.prev.next = itm.next
 			itm.next.prev = itm.prev
 		}
-
-		sl.length--
 	}
 }
 
