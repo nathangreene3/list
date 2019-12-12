@@ -25,8 +25,8 @@ func (itm *item) copy() *item {
 	return &item{Value: itm.Value, prev: itm.prev, next: itm.next}
 }
 
-// equals compares two items.
-func (itm *item) equals(item *item) bool {
+// equal compares two items.
+func (itm *item) equal(item *item) bool {
 	return itm.contains(item.Value)
 }
 

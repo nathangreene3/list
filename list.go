@@ -14,7 +14,10 @@ type List struct {
 // New list of values.
 func New(values ...interface{}) List {
 	var ls List
-	ls.Append(values...)
+	for _, value := range values {
+		ls.InsertAt(ls.length, value)
+	}
+
 	return ls
 }
 
@@ -43,7 +46,7 @@ func (ls *List) Equal(list List) bool {
 
 	itm0, itm1 := ls.head, list.head
 	for itm0 != nil && itm1 != nil {
-		if !itm0.equals(itm1) {
+		if !itm0.equal(itm1) {
 			return false
 		}
 
@@ -268,18 +271,41 @@ func (ls *List) String() string {
 
 // string2 represents a formmated list. TODO: Decide if this is better.
 func (ls *List) string2() string {
+	if ls.length == 0 {
+		return "[]"
+	}
+
 	var (
 		b   strings.Builder
 		itm = ls.head
 	)
 
 	b.WriteString(fmt.Sprintf("[%v", itm.Value))
+	itm = itm.next
 	for ; itm != nil; itm = itm.next {
-		b.WriteString(fmt.Sprintf(", %v", itm.Value))
+		b.WriteString(fmt.Sprintf(" %v", itm.Value))
 	}
 
 	b.WriteByte(']')
 	return b.String()
+}
+
+// Sublist returns a sublist on the range [i,j).
+func (ls *List) Sublist(i, j int) List {
+	var sub List
+	switch {
+	case i == j:
+		return sub
+	case j < i:
+		i, j = j, i
+	}
+
+	for itm := ls.head.getFrom(i); itm != nil && i < j; itm = itm.next {
+		sub.InsertAt(sub.length, itm.Value)
+		i++
+	}
+
+	return sub
 }
 
 // Swap two values.

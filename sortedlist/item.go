@@ -26,7 +26,7 @@ func (itm *item) copy() *item {
 	return &item{Value: itm.Value, prev: itm.prev, next: itm.next}
 }
 
-// equals returns true if two items contain the same value.
-func (itm *item) equals(item *item) bool {
+// equal returns true if two items contain the same value.
+func (itm *item) equal(item *item) bool {
 	return itm.Value.Compare(item.Value) == 0
 }

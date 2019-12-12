@@ -20,7 +20,7 @@ func initSeed() {
 	}
 }
 
-// TestInt implements Interface for testing.
+// TestInt implements Comparable for testing.
 type TestInt int
 
 // Compare two test ints.
@@ -38,17 +38,13 @@ func (n TestInt) Compare(m Comparable) int {
 // TestStruct implements Interface for testing.
 type TestStruct struct {
 	key   int
-	value string
+	value interface{}
 }
 
 // Compare two test structs.
 func (ts *TestStruct) Compare(x Comparable) int {
 	u := x.(*TestStruct)
 	switch {
-	// case ts.value < u.value:
-	// 	return -1
-	// case u.value < ts.value:
-	// 	return 1
 	case ts.key < u.key:
 		return -1
 	case u.key < ts.key:

@@ -7,10 +7,31 @@ import (
 	"time"
 )
 
-var (
-	seeded bool
-	seed   int64
+// ******************************************************************
+// TEST HELPERS
+// ******************************************************************
+
+const (
+	// maxIter is the maximum value to test linear changes in size
+	maxIter = 16
+
+	// maxPow is the maximum power of two to test changes in magnitude of the size
+	maxPow = 8
 )
+
+var (
+	// seeded indicates the random number generator was seeded.
+	seeded bool
+
+	// seed of the random number generator.
+	seed int64
+)
+
+// TestStruct is a complex structure for testing.
+type TestStruct struct {
+	key   int
+	value interface{}
+}
 
 func initSeed() {
 	if !seeded {
@@ -18,6 +39,20 @@ func initSeed() {
 		rand.Seed(seed)
 		seeded = true
 	}
+}
+
+func beginningPerm(n int) ([]int, List) {
+	var (
+		s  = make([]int, 0, n)
+		ls = New()
+	)
+
+	for i := 0; i < n; i++ {
+		s = append(s, i)
+		ls.Append(i)
+	}
+
+	return s, ls
 }
 
 // perm returns a permutation with a list.
@@ -50,16 +85,22 @@ func removeAt(index int, s []int) []int {
 	return append(s[:index], s[index+1:]...)
 }
 
-func TestCopy(t *testing.T) {
-	type T struct{ value int } // This is more complex than basic types
+func (ts *TestStruct) String() string {
+	return fmt.Sprintf("[%d, %s]", ts.key, ts.value)
+}
 
+// ******************************************************************
+// TESTS
+// ******************************************************************
+
+func TestCopy(t *testing.T) {
 	var (
 		numTs = 10
 		lst   = New()
 	)
 
 	for i := 0; i < numTs; i++ {
-		lst.Append(T{value: i})
+		lst.Append(TestStruct{key: i})
 	}
 
 	cpy := lst.Copy()
@@ -69,13 +110,13 @@ func TestCopy(t *testing.T) {
 	}
 
 	for i := 0; i < numTs; i++ {
-		cpy.Remove(T{value: i})
+		cpy.Remove(TestStruct{key: i})
 		if lst.Equal(cpy) {
 			// Test for inequality after removing ith item
 			t.Fatalf("\nexpected %v\nreceived %v\n", cpy.String(), lst.String())
 		}
 
-		cpy.InsertAt(i, T{value: i})
+		cpy.InsertAt(i, TestStruct{key: i})
 		if !lst.Equal(cpy) {
 			// Test for equality again after inserting the item back where it was
 			t.Fatalf("\nexpected %v\nreceived %v\n", lst.String(), cpy.String())
@@ -156,7 +197,7 @@ func TestRotateSwap(t *testing.T) {
 func TestSearchList(t *testing.T) {
 	initSeed()
 
-	var numItems = 5
+	numItems := 5
 	for iters := 0; iters < 10; iters++ {
 		nums, ls := perm(numItems)
 		for j, v := range nums {
@@ -193,5 +234,77 @@ func TestSliceMapList(t *testing.T) {
 				t.Fatalf("\nseed: %d\nexpected m[%d] = %d\nreceived %d\n", seed, j, nums[j], m[j].(int))
 			}
 		}
+	}
+}
+
+func TestStrings(t *testing.T) {
+	initSeed()
+
+	var (
+		_, ls  = perm(10)
+		s0, s1 = ls.String(), ls.string2()
+	)
+
+	if s0 != s1 {
+		t.Fatalf("\nexpected '%s'\nreceived '%s'\n", s0, s1)
+	}
+}
+
+func TestSublist(t *testing.T) {
+	var (
+		n     = 10
+		_, ls = beginningPerm(n)
+		exp   List
+		i     = rand.Intn(n)
+		j     = i + rand.Intn(n-i)
+		sub   = ls.Sublist(i, j)
+	)
+
+	for ; i < j; j-- {
+		exp.Append(ls.RemoveAt(i))
+	}
+
+	if !exp.Equal(sub) {
+		t.Fatalf("\nexpected '%s'\nreceived '%s'\n", exp.String(), sub.String())
+	}
+}
+
+// ******************************************************************
+// BENCHMARKS
+// ******************************************************************
+
+func BenchmarkString(b0 *testing.B) {
+	for i := 0; i < maxPow; i++ {
+		var (
+			n     = 1 << uint(i)
+			_, ls = beginningPerm(n)
+		)
+
+		b0.Run(
+			fmt.Sprintf("size %d", n),
+			func(b1 *testing.B) {
+				for j := 0; j < b1.N; j++ {
+					_ = ls.String()
+				}
+			},
+		)
+	}
+}
+
+func BenchmarkString2(b0 *testing.B) {
+	for i := 0; i < maxPow; i++ {
+		var (
+			n     = 1 << uint(i)
+			_, ls = beginningPerm(n)
+		)
+
+		b0.Run(
+			fmt.Sprintf("size %d", n),
+			func(b1 *testing.B) {
+				for j := 0; j < b1.N; j++ {
+					_ = ls.string2()
+				}
+			},
+		)
 	}
 }

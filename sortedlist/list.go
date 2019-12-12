@@ -41,7 +41,7 @@ func (sl *SortedList) Equal(sortedList SortedList) bool {
 
 	itm0, itm1 := sl.head, sortedList.head
 	for itm0 != nil && itm1 != nil {
-		if !itm0.equals(itm1) {
+		if !itm0.equal(itm1) {
 			return false
 		}
 
@@ -216,4 +216,24 @@ func (sl *SortedList) String() string {
 	}
 
 	return "[" + strings.Join(s, " ") + "]"
+}
+
+func (sl *SortedList) string2() string {
+	if sl.length == 0 {
+		return "[]"
+	}
+
+	var (
+		b   strings.Builder
+		itm = sl.head
+	)
+
+	b.WriteString(fmt.Sprintf("[%v", itm.Value))
+	itm = itm.next
+	for ; itm != nil; itm = itm.next {
+		b.WriteString(fmt.Sprintf(" %v", itm.Value))
+	}
+
+	b.WriteByte(']')
+	return b.String()
 }
