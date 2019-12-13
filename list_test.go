@@ -251,21 +251,23 @@ func TestStrings(t *testing.T) {
 }
 
 func TestSublist(t *testing.T) {
-	var (
-		n     = 10
-		_, ls = beginningPerm(n)
-		exp   List
-		i     = rand.Intn(n)
-		j     = i + rand.Intn(n-i)
-		sub   = ls.Sublist(i, j)
-	)
+	for i := 0; i < 10; i++ {
+		var (
+			n     = 10
+			_, ls = beginningPerm(n)
+			exp   List
+			j     = rand.Intn(n)
+			k     = j + rand.Intn(n-j)
+			sub   = ls.Sublist(j, k)
+		)
 
-	for ; i < j; j-- {
-		exp.Append(ls.RemoveAt(i))
-	}
+		for ; j < k; k-- {
+			exp.Append(ls.RemoveAt(j))
+		}
 
-	if !exp.Equal(sub) {
-		t.Fatalf("\nexpected '%s'\nreceived '%s'\n", exp.String(), sub.String())
+		if !exp.Equal(sub) {
+			t.Fatalf("\nexpected '%s'\nreceived '%s'\n", exp.String(), sub.String())
+		}
 	}
 }
 
