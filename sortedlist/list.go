@@ -38,33 +38,33 @@ func (sl *SortedList) find(value Comparable) *item {
 
 // Insert several values.
 func (sl *SortedList) Insert(values ...Comparable) {
-	for _, value := range values {
+	for i := 0; i < len(values); i++ {
 		switch {
 		case sl.length == 0:
-			sl.head = &item{Value: value}
+			sl.head = &item{Value: values[i]}
 			sl.tail = sl.head
-		case 0 < sl.head.Value.Compare(value):
+		case 0 < sl.head.Value.Compare(values[i]):
 			sl.head.prev = &item{
-				Value: value,
+				Value: values[i],
 				next:  sl.head,
 			}
 
 			sl.head = sl.head.prev
 		default:
 			itm := sl.tail
-			for ; itm != nil && 0 < itm.Value.Compare(value); itm = itm.prev {
+			for ; itm != nil && 0 < itm.Value.Compare(values[i]); itm = itm.prev {
 			}
 
 			if itm == sl.tail {
 				sl.tail.next = &item{
-					Value: value,
+					Value: values[i],
 					prev:  sl.tail,
 				}
 
 				sl.tail = sl.tail.next
 			} else {
 				itm.next.prev = &item{
-					Value: value,
+					Value: values[i],
 					prev:  itm,
 					next:  itm.next,
 				}
@@ -99,8 +99,8 @@ func (sl *SortedList) Map() map[int]Comparable {
 
 // Remove several values. If duplicates exist, they will all be removed.
 func (sl *SortedList) Remove(values ...Comparable) {
-	for _, value := range values {
-		sl.remove(value)
+	for i := 0; i < len(values); i++ {
+		sl.remove(values[i])
 	}
 }
 

@@ -21,8 +21,8 @@ func New(values ...interface{}) *List {
 
 // Append several values into a list.
 func (ls *List) Append(values ...interface{}) {
-	for _, value := range values {
-		ls.InsertAt(ls.length, value)
+	for i := 0; i < len(values); i++ {
+		ls.InsertAt(ls.length, values[i])
 	}
 }
 
@@ -49,15 +49,25 @@ func (ls *List) InsertAt(i int, value interface{}) {
 		ls.head = ls.head.prev
 	default:
 		// 0 < i < length --> insert as normal
-		itm := ls.head
-		for ; 0 < i && itm != nil; itm = itm.next {
-			i--
+		var itm *item
+		if i < ls.length>>1 {
+			// i is closer to 0 than n
+			itm = ls.head
+			for ; 0 < i && itm != nil; itm = itm.next {
+				i--
+			}
+		} else {
+			// i is closer to n than 0
+			itm = ls.tail
+			for ; 0 < i && itm != nil; itm = itm.prev {
+				i--
+			}
 		}
 
 		itm.prev.next = &item{
 			Value: value,
 			prev:  itm.prev,
-			next:  itm,
+			next:  itm.next,
 		}
 
 		itm.prev = itm.prev.next
@@ -119,9 +129,19 @@ func (ls *List) RemoveAt(i int) interface{} {
 		return value
 	default:
 		// Remove a normal item
-		itm := ls.head
-		for ; 0 < i && itm != nil; itm = itm.next {
-			i--
+		var itm *item
+		if i < ls.length>>1 {
+			// i is closer to 0 than n
+			itm = ls.head
+			for ; 0 < i && itm != nil; itm = itm.next {
+				i--
+			}
+		} else {
+			// i is closer to n than 0
+			itm = ls.tail
+			for ; 0 < i && itm != nil; itm = itm.prev {
+				i--
+			}
 		}
 
 		itm.prev.next = itm.next
@@ -133,6 +153,7 @@ func (ls *List) RemoveAt(i int) interface{} {
 // Search returns the index a value was found at or the length of the list and
 // whether or not the value was found in the list.
 func (ls *List) Search(value interface{}) (int, bool) {
+	// TODO: start searching from both ends asynchronously?
 	var (
 		i int
 		t = reflect.TypeOf(value)

@@ -109,11 +109,10 @@ func TestRemove(t *testing.T) {
 		if s := sl.Slice(); len(s) != sl.length {
 			t.Fatalf("expected length %d, received %d\n", sl.length, len(s))
 		} else {
-			for _, v := range s {
-				sl.Remove(v)
-				if sl.Contains(v) {
-					fmt.Printf("seed: %d\n", seed)
-					t.Fatalf("expected %v to be removed\n", v)
+			for i := 0; i < len(s); i++ {
+				sl.Remove(s[i])
+				if sl.Contains(s[i]) {
+					t.Fatalf("\nseed: %d\nexpected %v to be removed\n", seed, s[i])
 				}
 			}
 		}
