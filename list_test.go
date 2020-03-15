@@ -118,8 +118,6 @@ func TestHeapSort(t *testing.T) {
 	heap.Push(ls, 5)
 	heap.Push(ls, 4)
 
-	t.Fatal(ls.String())
-
 	s1 := []int{
 		heap.Pop(ls).(int),
 		heap.Pop(ls).(int),
