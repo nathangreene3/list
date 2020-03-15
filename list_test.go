@@ -101,7 +101,7 @@ func TestSort(t *testing.T) {
 	}
 }
 
-func TestHeapSort(t *testing.T) {
+func TestHeap(t *testing.T) {
 	var (
 		s0 = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 		ls = New(func(x, y interface{}) bool { return x.(int) < y.(int) })
@@ -139,5 +139,35 @@ func TestHeapSort(t *testing.T) {
 		if s0[i] != s1[i] {
 			t.Fatalf("\nexpected %v\nreceived %v\n", s0, s1)
 		}
+	}
+}
+
+func TestReduce(t *testing.T) {
+	var (
+		n   = 5
+		exp = n * (n + 1) / 2 // 1+2+...+n
+		rec = Generate(
+			n,
+			func(i int) interface{} { return i + 1 },
+			func(x, y interface{}) bool { return x.(int) < y.(int) },
+		).Reduce(
+			func(x, y interface{}) interface{} {
+				switch {
+				case x == nil:
+					if y == nil {
+						return 0
+					}
+					return y.(int)
+				case y == nil:
+					return x.(int)
+				default:
+					return x.(int) + y.(int)
+				}
+			},
+		)
+	)
+
+	if exp != rec {
+		t.Fatalf("\nexpected %d\nreceived %d\n", exp, rec)
 	}
 }

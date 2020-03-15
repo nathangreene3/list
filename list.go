@@ -14,13 +14,35 @@ type List struct {
 	less       Less
 }
 
+// Filterer determines if a value is to be retained.
+type Filterer func(value interface{}) bool
+
+// Generator defines the ith value in a list.
+type Generator func(i int) interface{}
+
 // Less defines the less-than comparison on two values.
 type Less func(x, y interface{}) bool
+
+// Mapper defines a value from another value.
+type Mapper func(value interface{}) interface{}
+
+// Reducer defines a value given two values.
+type Reducer func(x, y interface{}) interface{}
 
 // New list of values.
 func New(less Less, values ...interface{}) *List {
 	ls := List{less: less}
 	return ls.Append(values...)
+}
+
+// Generate a list of n values.
+func Generate(n int, gen Generator, less Less) *List {
+	ls := New(less)
+	for ; 0 < n; n-- {
+		ls.InsertAt(ls.length, gen(ls.length))
+	}
+
+	return ls
 }
 
 // Append several values into a list.
@@ -101,8 +123,8 @@ func (ls *List) Less(i, j int) bool {
 	return ls.less(ls.get(i).value, ls.get(j).value)
 }
 
-// Map a list of values.
-func (ls *List) Map() map[int]interface{} {
+// ToMap a list of values.
+func (ls *List) ToMap() map[int]interface{} {
 	var (
 		m = make(map[int]interface{})
 		i int
@@ -261,4 +283,36 @@ func (ls *List) SubList(i, j int) *List {
 func (ls *List) Swap(i, j int) {
 	x, y := ls.get(i), ls.get(j)
 	x.value, y.value = y.value, x.value
+}
+
+// Filter ...
+func (ls *List) Filter(f Filterer) *List {
+	newLs := New(ls.less)
+	for itm := ls.head; itm != nil; itm = itm.next {
+		if f(itm.value) {
+			newLs.InsertAt(newLs.length, itm.value)
+		}
+	}
+
+	return newLs
+}
+
+// Map ...
+func (ls *List) Map(f Mapper) *List {
+	newLs := New(ls.less)
+	for itm := ls.head; itm != nil; itm = itm.next {
+		newLs.InsertAt(newLs.length, f(itm.value))
+	}
+
+	return newLs
+}
+
+// Reduce ...
+func (ls *List) Reduce(f Reducer) interface{} {
+	var value interface{}
+	for itm := ls.head; itm != nil; itm = itm.next {
+		value = f(value, itm.value)
+	}
+
+	return value
 }
