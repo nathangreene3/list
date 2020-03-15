@@ -2,6 +2,6 @@ package sortedlist
 
 // item ...
 type item struct {
-	Value      Comparable
+	value      Comparable
 	prev, next *item
 }

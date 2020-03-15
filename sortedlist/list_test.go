@@ -77,9 +77,9 @@ func TestSortedList(t *testing.T) {
 		}
 
 		for itm := sl.head; itm != nil && itm.next != nil; itm = itm.next {
-			if 0 < itm.Value.Compare(itm.next.Value) {
+			if 0 < itm.value.Compare(itm.next.value) {
 				fmt.Printf("seed: %d\n", seed)
-				t.Fatalf("expected %v < %v\n", itm.Value, itm.next.Value)
+				t.Fatalf("expected %v < %v\n", itm.value, itm.next.value)
 			}
 		}
 

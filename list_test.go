@@ -20,6 +20,7 @@ func initSeed() {
 	}
 }
 
+// TestList ensures manipulating a list is equivalent to manipulating a slice.
 func TestList(t *testing.T) {
 	initSeed()
 
@@ -54,7 +55,26 @@ func TestList(t *testing.T) {
 
 		if s := ls.Slice(); len(s) != ls.length {
 			fmt.Printf("seed: %d\n", seed)
-			t.Fatalf("\nexpected length %d, received %d\n", ls.length, len(s))
+			t.Fatalf("\nexpected length %d\nreceived %d\n", ls.length, len(s))
+		}
+	}
+}
+
+func TestInsertRemove(t *testing.T) {
+	var (
+		s  = []int{0, 1, 2, 3, 4, 5, 6}
+		ls = New(1, 2)
+	)
+
+	ls.Append(0, 4, 0, 5, 0).Remove(0).InsertAt(2, 3).InsertAt(0, 0).Append(6)
+	if len(s) != ls.Length() {
+		t.Fatalf("\nexpected %v\nreceived %v\n", s, ls.String())
+	}
+
+	for i := 0; i < len(s); i++ {
+		index, ok := ls.Search(s[i])
+		if i != index || !ok {
+			t.Fatalf("\nexpected %v\nreceived %v\n", s, ls.String())
 		}
 	}
 }

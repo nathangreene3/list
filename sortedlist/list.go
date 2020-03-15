@@ -13,9 +13,8 @@ type SortedList struct {
 
 // New creates a new sorted list of values.
 func New(values ...Comparable) *SortedList {
-	var ls SortedList
-	ls.Insert(values...)
-	return &ls
+	var sl SortedList
+	return sl.Insert(values...)
 }
 
 // Contains returns true if a value is found in a sorted list.
@@ -23,11 +22,16 @@ func (sl *SortedList) Contains(value Comparable) bool {
 	return sl.find(value) != nil
 }
 
-// find an item holding a value.
+// find an item containing a value.
 func (sl *SortedList) find(value Comparable) *item {
 	if 0 < sl.length {
 		for itm := sl.head; itm != nil; itm = itm.next {
-			if itm.Value.Compare(value) == 0 {
+			r := itm.value.Compare(value)
+			switch {
+			case r < 0: // Continue
+			case 0 < r:
+				return nil
+			default:
 				return itm
 			}
 		}
@@ -37,34 +41,34 @@ func (sl *SortedList) find(value Comparable) *item {
 }
 
 // Insert several values.
-func (sl *SortedList) Insert(values ...Comparable) {
+func (sl *SortedList) Insert(values ...Comparable) *SortedList {
 	for i := 0; i < len(values); i++ {
 		switch {
 		case sl.length == 0:
-			sl.head = &item{Value: values[i]}
+			sl.head = &item{value: values[i]}
 			sl.tail = sl.head
-		case 0 < sl.head.Value.Compare(values[i]):
+		case 0 < sl.head.value.Compare(values[i]):
 			sl.head.prev = &item{
-				Value: values[i],
+				value: values[i],
 				next:  sl.head,
 			}
 
 			sl.head = sl.head.prev
 		default:
 			itm := sl.tail
-			for ; itm != nil && 0 < itm.Value.Compare(values[i]); itm = itm.prev {
+			for ; itm != nil && 0 < itm.value.Compare(values[i]); itm = itm.prev {
 			}
 
 			if itm == sl.tail {
 				sl.tail.next = &item{
-					Value: values[i],
+					value: values[i],
 					prev:  sl.tail,
 				}
 
 				sl.tail = sl.tail.next
 			} else {
 				itm.next.prev = &item{
-					Value: values[i],
+					value: values[i],
 					prev:  itm,
 					next:  itm.next,
 				}
@@ -75,6 +79,8 @@ func (sl *SortedList) Insert(values ...Comparable) {
 
 		sl.length++
 	}
+
+	return sl
 }
 
 // Length of the sorted list.
@@ -90,7 +96,7 @@ func (sl *SortedList) Map() map[int]Comparable {
 	)
 
 	for itm := sl.head; itm != nil; itm = itm.next {
-		m[i] = itm.Value
+		m[i] = itm.value
 		i++
 	}
 
@@ -98,30 +104,30 @@ func (sl *SortedList) Map() map[int]Comparable {
 }
 
 // Remove several values. If duplicates exist, they will all be removed.
-func (sl *SortedList) Remove(values ...Comparable) {
+func (sl *SortedList) Remove(values ...Comparable) *SortedList {
 	for i := 0; i < len(values); i++ {
-		sl.remove(values[i])
-	}
-}
+		for itm := sl.find(values[i]); itm != nil; itm = itm.next {
+			switch {
+			case sl.length == 1:
+				sl.head = nil
+				sl.tail = nil
+			case itm == sl.head:
+				sl.head = sl.head.next
+			case itm == sl.tail:
+				sl.tail = sl.tail.prev
+			default:
+				itm.prev.next = itm.next
+				itm.next.prev = itm.prev
+			}
 
-// remove a value. If duplicates exist, they will all be removed.
-func (sl *SortedList) remove(value Comparable) {
-	for itm := sl.find(value); itm != nil; itm = sl.find(value) {
-		switch {
-		case sl.length == 1:
-			sl.head = nil
-			sl.tail = nil
-		case itm == sl.head:
-			sl.head = sl.head.next
-		case itm == sl.tail:
-			sl.tail = sl.tail.prev
-		default:
-			itm.prev.next = itm.next
-			itm.next.prev = itm.prev
+			sl.length--
+			if itm.next != nil && itm.next.value.Compare(values[i]) != 0 {
+				break
+			}
 		}
-
-		sl.length--
 	}
+
+	return sl
 }
 
 // RemoveAt the ith value.
@@ -133,27 +139,27 @@ func (sl *SortedList) RemoveAt(i int) Comparable {
 	switch i {
 	case 0:
 		if sl.length == 1 {
-			value := sl.head.Value
+			value := sl.head.value
 			sl.head = nil
 			sl.tail = nil
 			sl.length--
 			return value
 		}
 
-		value := sl.head.Value
+		value := sl.head.value
 		sl.head = sl.head.next
 		sl.length--
 		return value
 	case sl.length - 1:
 		if sl.length == 1 {
-			value := sl.head.Value
+			value := sl.head.value
 			sl.head = nil
 			sl.tail = nil
 			sl.length--
 			return value
 		}
 
-		value := sl.tail.Value
+		value := sl.tail.value
 		sl.tail = sl.tail.prev
 		sl.length--
 		return value
@@ -163,7 +169,7 @@ func (sl *SortedList) RemoveAt(i int) Comparable {
 				itm.prev.next = itm.next
 				itm.next.prev = itm.prev
 				sl.length--
-				return itm.Value
+				return itm.value
 			}
 
 			i--
@@ -177,7 +183,7 @@ func (sl *SortedList) RemoveAt(i int) Comparable {
 func (sl *SortedList) Slice() []Comparable {
 	s := make([]Comparable, 0, sl.length)
 	for itm := sl.head; itm != nil; itm = itm.next {
-		s = append(s, itm.Value)
+		s = append(s, itm.value)
 	}
 
 	return s
@@ -187,7 +193,7 @@ func (sl *SortedList) Slice() []Comparable {
 func (sl *SortedList) String() string {
 	s := make([]string, 0, sl.length)
 	for itm := sl.head; itm != nil; itm = itm.next {
-		s = append(s, fmt.Sprintf("%v", itm.Value))
+		s = append(s, fmt.Sprintf("%v", itm.value))
 	}
 
 	return strings.Join(s, ",")
