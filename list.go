@@ -37,12 +37,12 @@ func New(less Less, values ...interface{}) *List {
 
 // Generate a list of n values.
 func Generate(n int, gen Generator, less Less) *List {
-	ls := New(less)
+	ls := List{less: less}
 	for ; 0 < n; n-- {
 		ls.InsertAt(ls.length, gen(ls.length))
 	}
 
-	return ls
+	return &ls
 }
 
 // Append several values into a list.

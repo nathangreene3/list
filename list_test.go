@@ -31,7 +31,7 @@ func TestList(t *testing.T) {
 	)
 
 	for i := 0; i < iters; i++ {
-		ls := New(func(x, y interface{}) bool { return x.(int) < y.(int) })
+		ls := New(func(x, y interface{}) bool { xVal, _ := x.(int); yVal, _ := y.(int); return xVal < yVal })
 		nums := make([]int, 0, numItems)
 		for j := 0; j < numItems; j++ {
 			x := rand.Int()
@@ -64,7 +64,7 @@ func TestList(t *testing.T) {
 func TestInsertRemove(t *testing.T) {
 	var (
 		s  = []int{0, 1, 2, 3, 4, 5, 6}
-		ls = New(func(x, y interface{}) bool { return x.(int) < y.(int) }, 0, 1, 0, 2, 0)
+		ls = New(func(x, y interface{}) bool { xVal, _ := x.(int); yVal, _ := y.(int); return xVal < yVal }, 0, 1, 0, 2, 0)
 	)
 
 	ls.RemoveAt(4)
@@ -86,7 +86,7 @@ func TestInsertRemove(t *testing.T) {
 func TestSort(t *testing.T) {
 	var (
 		s  = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-		ls = New(func(x, y interface{}) bool { return x.(int) < y.(int) }, 9, 0, 8, 1, 7, 2, 6, 3, 5, 4).Sort()
+		ls = New(func(x, y interface{}) bool { xVal, _ := x.(int); yVal, _ := y.(int); return xVal < yVal }, 9, 0, 8, 1, 7, 2, 6, 3, 5, 4).Sort()
 	)
 
 	if len(s) != ls.Len() {
@@ -104,7 +104,7 @@ func TestSort(t *testing.T) {
 func TestHeap(t *testing.T) {
 	var (
 		s0 = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-		ls = New(func(x, y interface{}) bool { return x.(int) < y.(int) })
+		ls = New(func(x, y interface{}) bool { xVal, _ := x.(int); yVal, _ := y.(int); return xVal < yVal })
 	)
 
 	heap.Push(ls, 9)
@@ -149,22 +149,8 @@ func TestReduce(t *testing.T) {
 		rec = Generate(
 			n,
 			func(i int) interface{} { return i + 1 },
-			func(x, y interface{}) bool { return x.(int) < y.(int) },
-		).Reduce(
-			func(x, y interface{}) interface{} {
-				switch {
-				case x == nil:
-					if y == nil {
-						return 0
-					}
-					return y.(int)
-				case y == nil:
-					return x.(int)
-				default:
-					return x.(int) + y.(int)
-				}
-			},
-		)
+			func(x, y interface{}) bool { xVal, _ := x.(int); yVal, _ := y.(int); return xVal < yVal },
+		).Reduce(func(x, y interface{}) interface{} { xVal, _ := x.(int); yVal, _ := y.(int); return xVal + yVal })
 	)
 
 	if exp != rec {
