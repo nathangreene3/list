@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// List is a doubly-linked list.
+// List is a doubly-linked list. A list implements the sort and heap interface.
 type List struct {
 	head, tail *item
 	length     int
@@ -21,25 +21,24 @@ type Filterer func(value interface{}) bool
 type Generator func(i int) interface{}
 
 // Less defines the less-than comparison on two values.
-type Less func(x, y interface{}) bool
+type Less func(value0, value1 interface{}) bool
 
 // Mapper defines a value from another value.
 type Mapper func(value interface{}) interface{}
 
 // Reducer defines a value given two values.
-type Reducer func(x, y interface{}) interface{}
+type Reducer func(value0, value1 interface{}) interface{}
 
-// New list of values.
-func New(less Less, values ...interface{}) *List {
-	ls := List{less: less}
-	return ls.Append(values...)
+// New list of values. The Less function f is optional, but is required for sorting or calling Less.
+func New(f Less, values ...interface{}) *List {
+	return (&List{less: f}).Append(values...)
 }
 
-// Generate a list of n values.
-func Generate(n int, gen Generator, less Less) *List {
-	ls := List{less: less}
+// Generate a list of n values. The Less function f is optional, but is required for sorting or calling Less.
+func Generate(n int, g Generator, f Less) *List {
+	ls := List{less: f}
 	for ; 0 < n; n-- {
-		ls.InsertAt(ls.length, gen(ls.length))
+		ls.InsertAt(ls.length, g(ls.length))
 	}
 
 	return &ls
@@ -54,9 +53,26 @@ func (ls *List) Append(values ...interface{}) *List {
 	return ls
 }
 
-// Get the ith value from a list. Value is not removed from the list.
-func (ls *List) Get(i int) interface{} {
-	return ls.get(i).value
+// Copy a list.
+func (ls *List) Copy() *List {
+	cpy := New(ls.less)
+	for itm := ls.head; itm != nil; itm = itm.next {
+		cpy.InsertAt(cpy.length, itm.value)
+	}
+
+	return cpy
+}
+
+// Filter returns a new list without the filtered values given a filter function.
+func (ls *List) Filter(f Filterer) *List {
+	newLs := New(ls.less)
+	for itm := ls.head; itm != nil; itm = itm.next {
+		if f(itm.value) {
+			newLs.InsertAt(newLs.length, itm.value)
+		}
+	}
+
+	return newLs
 }
 
 // get the ith item from a list.
@@ -123,19 +139,14 @@ func (ls *List) Less(i, j int) bool {
 	return ls.less(ls.get(i).value, ls.get(j).value)
 }
 
-// ToMap a list of values.
-func (ls *List) ToMap() map[int]interface{} {
-	var (
-		m = make(map[int]interface{})
-		i int
-	)
-
+// Map a list to a new list given a mapping function.
+func (ls *List) Map(f Mapper) *List {
+	newLs := New(ls.less)
 	for itm := ls.head; itm != nil; itm = itm.next {
-		m[i] = itm.value
-		i++
+		newLs.InsertAt(newLs.length, f(itm.value))
 	}
 
-	return m
+	return newLs
 }
 
 // Pop removes the tail value from a list.
@@ -143,12 +154,31 @@ func (ls *List) Pop() interface{} {
 	return ls.RemoveAt(ls.length - 1)
 }
 
+// Prepend inserts values at the beginning of a list.
+func (ls *List) Prepend(values ...interface{}) *List {
+	for i := 0; i < len(values); i++ {
+		ls.InsertAt(0, values[i])
+	}
+
+	return ls
+}
+
 // Push appends a value onto a list.
 func (ls *List) Push(value interface{}) {
 	ls.InsertAt(ls.length, value)
 }
 
-// Remove ...
+// Reduce a list to a value given a reducing function.
+func (ls *List) Reduce(f Reducer) interface{} {
+	var value interface{}
+	for itm := ls.head; itm != nil; itm = itm.next {
+		value = f(value, itm.value)
+	}
+
+	return value
+}
+
+// Remove values from the list.
 func (ls *List) Remove(values ...interface{}) *List {
 	for i := 0; i < len(values); i++ {
 		t := reflect.TypeOf(values[i])
@@ -215,7 +245,6 @@ func (ls *List) RemoveAt(i int) interface{} {
 // Search returns the index a value was found at or the length of the list and
 // whether or not the value was found in the list.
 func (ls *List) Search(value interface{}) (int, bool) {
-	// TODO: start searching from both ends asynchronously?
 	var (
 		i int
 		t = reflect.TypeOf(value)
@@ -285,34 +314,22 @@ func (ls *List) Swap(i, j int) {
 	x.value, y.value = y.value, x.value
 }
 
-// Filter ...
-func (ls *List) Filter(f Filterer) *List {
-	newLs := New(ls.less)
+// ToMap returns a map indices to their values.
+func (ls *List) ToMap() map[int]interface{} {
+	var (
+		m = make(map[int]interface{})
+		i int
+	)
+
 	for itm := ls.head; itm != nil; itm = itm.next {
-		if f(itm.value) {
-			newLs.InsertAt(newLs.length, itm.value)
-		}
+		m[i] = itm.value
+		i++
 	}
 
-	return newLs
+	return m
 }
 
-// Map ...
-func (ls *List) Map(f Mapper) *List {
-	newLs := New(ls.less)
-	for itm := ls.head; itm != nil; itm = itm.next {
-		newLs.InsertAt(newLs.length, f(itm.value))
-	}
-
-	return newLs
-}
-
-// Reduce ...
-func (ls *List) Reduce(f Reducer) interface{} {
-	var value interface{}
-	for itm := ls.head; itm != nil; itm = itm.next {
-		value = f(value, itm.value)
-	}
-
-	return value
+// Value returns the ith value from a list. Value is not removed from the list.
+func (ls *List) Value(i int) interface{} {
+	return ls.get(i).value
 }
