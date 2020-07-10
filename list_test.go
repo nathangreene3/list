@@ -28,11 +28,11 @@ func TestList(t *testing.T) {
 	initSeed()
 
 	var (
-		iters    = 100
-		numItems = 100
+		numTests = 8
+		numItems = 256
 	)
 
-	for i := 0; i < iters; i++ {
+	for i := 0; i < numTests; i++ {
 		var (
 			ls   = New(func(x, y interface{}) bool { return x.(int) < y.(int) })
 			nums = make([]int, 0, numItems)
@@ -44,61 +44,39 @@ func TestList(t *testing.T) {
 			nums = append(nums, x)
 		}
 
-		var (
-			itm = ls.head
-			j   int
-		)
-
-		for ; j < numItems && itm != nil && itm.next != nil; itm = itm.next {
+		for j, itm := 0, ls.head; j < numItems && itm != nil; j, itm = j+1, itm.next {
 			if index, ok := ls.Search(nums[j]); j != index || !ok {
 				fmt.Printf("seed: %d\n", seed)
 				t.Fatalf("\nexpected (%d, %t)\nreceived (%d, %t)\n", j, true, index, ok)
 			}
-
-			j++
 		}
 
 		if s := ls.Slice(); len(s) != ls.length {
 			fmt.Printf("seed: %d\n", seed)
 			t.Fatalf("\nexpected length %d\nreceived %d\n", ls.length, len(s))
 		}
-	}
-}
 
-func TestInsertRemove(t *testing.T) {
-	var (
-		s  = []int{0, 1, 2, 3, 4, 5, 6}
-		ls = New(func(x, y interface{}) bool { return x.(int) < y.(int) }, 0, 1, 0, 2, 0)
-	)
-
-	ls.RemoveAt(4)
-	ls.RemoveAt(2)
-	ls.RemoveAt(0)
-	ls.Append(0, 4, 0, 5, 0).Remove(0).InsertAt(2, 3).Prepend(0).Append(6)
-	if len(s) != ls.Len() {
-		t.Fatalf("\nexpected %v\nreceived %v\n", s, ls.String())
-	}
-
-	for i := 0; i < len(s); i++ {
-		if index, ok := ls.Search(s[i]); i != index || !ok {
-			t.Fatalf("\nexpected %v\nreceived %v\n", s, ls.String())
+		if s := ls.Sort(); !sort.IsSorted(s) {
+			t.Fatalf("\nexpected %v to be sorted\n", s)
 		}
 	}
 }
 
-func TestSort(t *testing.T) {
-	var (
-		s  = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-		ls = New(func(x, y interface{}) bool { return x.(int) < y.(int) }, 9, 0, 8, 1, 7, 2, 6, 3, 5, 4).Sort()
-	)
+func TestInsertRemove(t *testing.T) {
+	ls := New(func(x, y interface{}) bool { return x.(int) < y.(int) }, 0, 1, 0, 2, 0)
+	ls.RemoveAt(4)
+	ls.RemoveAt(2)
+	ls.RemoveAt(0)
+	ls.Append(0, 4, 0, 5, 0).Remove(0).InsertAt(2, 3).Prepend(0).Append(6)
 
-	if len(s) != ls.Len() {
-		t.Fatalf("\nexpected %v\nreceived %v\n", s, ls.String())
+	exp := []int{0, 1, 2, 3, 4, 5, 6}
+	if len(exp) != ls.Len() {
+		t.Fatalf("\nexpected %v\nreceived %v\n", exp, ls.String())
 	}
 
-	for i := 0; i < len(s); i++ {
-		if index, ok := ls.Search(s[i]); i != index || !ok {
-			t.Fatalf("\nexpected %v\nreceived %v\n", s, ls.String())
+	for i := 0; i < len(exp); i++ {
+		if index, ok := ls.Search(exp[i]); i != index || !ok {
+			t.Fatalf("\nexpected %v\nreceived %v\n", exp, ls.String())
 		}
 	}
 }
