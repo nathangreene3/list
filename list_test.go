@@ -6,27 +6,29 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"strings"
 	"testing"
-	"time"
+
+	"github.com/nathangreene3/math"
 )
 
-var (
-	seeded bool
-	seed   int64
-)
+// testInt is a comparable integer.
+type testInt int
 
-func initSeed() {
-	if !seeded {
-		seed = time.Now().Unix()
-		rand.Seed(seed)
-		seeded = true
+// Compare two integers.
+func (a testInt) Compare(b Comparable) int {
+	switch {
+	case a < b.(testInt):
+		return -1
+	case b.(testInt) < a:
+		return 1
+	default:
+		return 0
 	}
 }
 
 // TestList ensures manipulating a list is equivalent to manipulating a slice.
 func TestList(t *testing.T) {
-	initSeed()
-
 	var (
 		numTests = 8
 		numItems = 256
@@ -34,7 +36,7 @@ func TestList(t *testing.T) {
 
 	for i := 0; i < numTests; i++ {
 		var (
-			ls   = New(func(x, y interface{}) bool { return x.(int) < y.(int) })
+			ls   = New(Ints)
 			nums = make([]int, 0, numItems)
 		)
 
@@ -46,13 +48,11 @@ func TestList(t *testing.T) {
 
 		for j, itm := 0, ls.head; j < numItems && itm != nil; j, itm = j+1, itm.next {
 			if index, ok := ls.Search(nums[j]); j != index || !ok {
-				fmt.Printf("seed: %d\n", seed)
 				t.Fatalf("\nexpected (%d, %t)\nreceived (%d, %t)\n", j, true, index, ok)
 			}
 		}
 
 		if s := ls.Slice(); len(s) != ls.length {
-			fmt.Printf("seed: %d\n", seed)
 			t.Fatalf("\nexpected length %d\nreceived %d\n", ls.length, len(s))
 		}
 
@@ -62,8 +62,21 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestComparable(t *testing.T) {
+	ls := New(CmpLess)
+	for i := 0; i < 8; i++ {
+		ls.Append(testInt(rand.Intn(10)))
+	}
+
+	ls.Sort()
+	if !sort.IsSorted(ls) {
+		t.Fatalf("\nexpected sorted list\nreceived %v\n", ls)
+	}
+}
+
+// TestInsertRemove tests the manual alteration of a list's state.
 func TestInsertRemove(t *testing.T) {
-	ls := New(func(x, y interface{}) bool { return x.(int) < y.(int) }, 0, 1, 0, 2, 0)
+	ls := New(Ints, 0, 1, 0, 2, 0)
 	ls.RemoveAt(4)
 	ls.RemoveAt(2)
 	ls.RemoveAt(0)
@@ -81,11 +94,12 @@ func TestInsertRemove(t *testing.T) {
 	}
 }
 
+// TestHeap heapifies a list and sorts integers.
 func TestHeap(t *testing.T) {
 	var (
 		rnd = []int{9, 0, 8, 1, 7, 2, 6, 3, 5, 4}
 		exp = make([]int, len(rnd))
-		ls  = New(func(x, y interface{}) bool { return x.(int) < y.(int) })
+		ls  = New(Ints)
 	)
 
 	copy(exp, rnd)
@@ -111,141 +125,158 @@ func TestHeap(t *testing.T) {
 	}
 }
 
-func TestReduce(t *testing.T) {
-	var (
-		n   = 5
-		exp = n * (n + 1) / 2 // 1+2+...+n
-		rec = Generate(
-			n,
-			func(i int) interface{} { return i + 1 },
-			func(x, y interface{}) bool { return x.(int) < y.(int) },
-		).Reduce(func(x, y interface{}) interface{} { xVal, _ := x.(int); yVal, _ := y.(int); return xVal + yVal })
-	)
+// TestMapFilterReduce generates a list of integers as {1, 2, ..., n}, then reduces the list to compute 1+2+...+n = (n^2+n)/2.
+func TestMapFilterReduce(t *testing.T) {
+	for n := 1; n <= 256; n <<= 1 {
+		// Computing sums
+		var (
+			exp int         = n * (n + 1) / 2                                                 // 1+2+...+n
+			gen Generator   = func(i int) interface{} { return i + 1 }                        // Generates {1, 2, 3, ..., 256}
+			red Reducer     = func(x, y interface{}) interface{} { return x.(int) + y.(int) } //
+			rec interface{} = Generate(n, gen, Ints).Reduce(red)                              // Returns interface{}, not int on purpose
+		)
 
-	if exp != rec {
-		t.Fatalf("\nexpected %d\nreceived %d\n", exp, rec)
+		if exp != rec {
+			t.Fatalf("\nexpected %d\nreceived %d\n", exp, rec)
+		}
+	}
+
+	{
+		// Filter primes
+		// TODO: Set exp with math.primes
+		exp := append(make([]int, 0, 256), 2)
+		for n := 3; n < 256; n += 2 {
+			if math.IsPrime(n) {
+				exp = append(exp, n)
+			}
+		}
+
+		var (
+			gen  Generator     = func(i int) interface{} { return i + 1 }                  // Generate {1, 2, 3, ..., 256}
+			fltr Filterer      = func(x interface{}) bool { return math.IsPrime(x.(int)) } // Filter primes
+			rec  []interface{} = Generate(256, gen, Ints).Filter(fltr).Slice()
+		)
+
+		if len(exp) != len(rec) {
+			t.Fatalf("\nexpected %d\nreceived %d\n", exp, rec)
+		}
+
+		for i := 0; i < len(rec); i++ {
+			if exp[i] != rec[i] {
+				t.Fatalf("\nexpected %d\nreceived %d\n", exp, rec)
+			}
+		}
+	}
+
+	{
+		// Joining directories into a path
+		var (
+			values []string    = []string{"a", "b", "c", "d", "e"}
+			exp    string      = strings.Join(values, "/")
+			gen    Generator   = func(i int) interface{} { return string('a' + byte(i)) }
+			red    Reducer     = func(x, y interface{}) interface{} { return x.(string) + "/" + y.(string) }
+			rec    interface{} = Generate(len(values), gen, Strings).Reduce(red)
+		)
+
+		if exp != rec {
+			t.Fatalf("\nexpected %q\nreceived %q\n", exp, rec)
+		}
 	}
 }
 
 func BenchmarkList(b *testing.B) {
 	var (
-		maxSize = int(256)
-		values  = make([]interface{}, maxSize)
-		less    = func(x, y interface{}) bool { return x.(int) < y.(int) }
+		n  int           = 256
+		s  int           = 8
+		vs []interface{} = make([]interface{}, n)
+		f  Lesser        = Ints
 	)
 
-	{ // Linear benchmark
-		stepSize := 8
-		for i := 0; i <= len(values); i += stepSize {
-			if benchmarkList(b, less, values[:i]...) {
-				// b.Error("An unexpected error occured")
-			}
+	{
+		// Linear benchmarks
+		for i := 0; i <= len(vs); i += s {
+			benchmarkList(b, f, vs[:i]...)
 		}
 
-		for i := 0; i <= len(values); i += stepSize {
-			if benchmarkGoList(b, values[:i]...) {
-				// b.Error("An unexpected error occured")
-			}
+		for i := 0; i <= len(vs); i += s {
+			benchmarkGoList(b, vs[:i]...)
 		}
 
-		for i := 0; i <= len(values); i += stepSize {
-			if benchmarkSliceCopy(b, values[:i]...) {
-				// b.Error("An unexpected error occured")
-			}
+		for i := 0; i <= len(vs); i += s {
+			benchmarkSliceCopy(b, vs[:i]...)
 		}
 
-		for i := 0; i <= len(values); i += stepSize {
-			if benchmarkSliceAppend(b, values[:i]...) {
-				// b.Error("An unexpected error occured")
-			}
+		for i := 0; i <= len(vs); i += s {
+			benchmarkSliceAppend(b, vs[:i]...)
 		}
 	}
 
-	{ // Exponential benchmark
-		for i := 1; i <= maxSize; i <<= 1 {
-			if benchmarkList(b, less, values[:i]...) {
-				// b.Error("An unexpected error occured")
-			}
+	{
+		// Exponential benchmark
+		for i := 1; i <= n; i <<= 1 {
+			benchmarkList(b, f, vs[:i]...)
 		}
 
-		for i := 1; i <= maxSize; i <<= 1 {
-			if benchmarkGoList(b, values[:i]...) {
-				// b.Error("An unexpected error occured")
-			}
+		for i := 1; i <= n; i <<= 1 {
+			benchmarkGoList(b, vs[:i]...)
 		}
 
-		for i := 1; i <= maxSize; i <<= 1 {
-			if benchmarkSliceCopy(b, values[:i]...) {
-				// b.Error("An unexpected error occured")
-			}
+		for i := 1; i <= n; i <<= 1 {
+			benchmarkSliceCopy(b, vs[:i]...)
 		}
 
-		for i := 1; i <= maxSize; i <<= 1 {
-			if benchmarkSliceAppend(b, values[:i]...) {
-				// b.Error("An unexpected error occured")
-			}
+		for i := 1; i <= n; i <<= 1 {
+			benchmarkSliceAppend(b, vs[:i]...)
 		}
 	}
 }
 
-func benchmarkList(b *testing.B, less Less, values ...interface{}) bool {
-	r := b.Run(
-		fmt.Sprintf("New list of %d values", len(values)),
-		func(b0 *testing.B) {
-			for i := 0; i < b0.N; i++ {
-				ls := New(less)
-				for j := 0; j < len(values); j++ {
-					ls.Append(values[j])
-				}
+func benchmarkList(b *testing.B, less Lesser, values ...interface{}) bool {
+	f := func(b0 *testing.B) {
+		for i := 0; i < b0.N; i++ {
+			ls := New(less)
+			for j := 0; j < len(values); j++ {
+				ls.Append(values[j])
 			}
-		},
-	)
+		}
+	}
 
-	return r
+	return b.Run(fmt.Sprintf("New list of %d values", len(values)), f)
 }
 
 func benchmarkGoList(b *testing.B, values ...interface{}) bool {
-	r := b.Run(
-		fmt.Sprintf("New Go list of %d values", len(values)),
-		func(b0 *testing.B) {
-			for i := 0; i < b0.N; i++ {
-				ls := golist.New()
-				for j := 0; j < len(values); j++ {
-					ls.PushBack(values[j])
-				}
+	f := func(b0 *testing.B) {
+		for i := 0; i < b0.N; i++ {
+			ls := golist.New()
+			for j := 0; j < len(values); j++ {
+				ls.PushBack(values[j])
 			}
-		},
-	)
+		}
+	}
 
-	return r
+	return b.Run(fmt.Sprintf("New Go list of %d values", len(values)), f)
 }
 
 func benchmarkSliceCopy(b *testing.B, values ...interface{}) bool {
-	r := b.Run(
-		fmt.Sprintf("Copied slice of %d values", len(values)),
-		func(b0 *testing.B) {
-			for i := 0; i < b0.N; i++ {
-				lst := make([]interface{}, len(values))
-				copy(lst, values)
-			}
-		},
-	)
+	f := func(b0 *testing.B) {
+		for i := 0; i < b0.N; i++ {
+			lst := make([]interface{}, len(values))
+			copy(lst, values)
+		}
+	}
 
-	return r
+	return b.Run(fmt.Sprintf("Copied slice of %d values", len(values)), f)
 }
 
 func benchmarkSliceAppend(b *testing.B, values ...interface{}) bool {
-	r := b.Run(
-		fmt.Sprintf("Appended slice of %d values", len(values)),
-		func(b0 *testing.B) {
-			for i := 0; i < b0.N; i++ {
-				lst := make([]interface{}, 0)
-				for j := 0; j < len(values); j++ {
-					lst = append(lst, values[j])
-				}
+	f := func(b0 *testing.B) {
+		for i := 0; i < b0.N; i++ {
+			lst := make([]interface{}, 0)
+			for j := 0; j < len(values); j++ {
+				lst = append(lst, values[j])
 			}
-		},
-	)
+		}
+	}
 
-	return r
+	return b.Run(fmt.Sprintf("Appended slice of %d values", len(values)), f)
 }

@@ -11,31 +11,16 @@ import (
 type List struct {
 	head, tail *item
 	length     int
-	less       Less
+	less       Lesser
 }
 
-// Filterer determines if a value is to be retained.
-type Filterer func(value interface{}) bool
-
-// Generator defines the ith value in a list.
-type Generator func(i int) interface{}
-
-// Less defines the less-than comparison on two values.
-type Less func(value0, value1 interface{}) bool
-
-// Mapper defines a value from another value.
-type Mapper func(value interface{}) interface{}
-
-// Reducer defines a value given two values.
-type Reducer func(value0, value1 interface{}) interface{}
-
 // New list of values. The Less function f is optional, but is required for sorting or calling Less.
-func New(f Less, values ...interface{}) *List {
+func New(f Lesser, values ...interface{}) *List {
 	return (&List{less: f}).Append(values...)
 }
 
 // Generate a list of n values. The Less function f is optional, but is required for sorting or calling Less.
-func Generate(n int, g Generator, f Less) *List {
+func Generate(n int, g Generator, f Lesser) *List {
 	ls := List{less: f}
 	for ; 0 < n; n-- {
 		ls.InsertAt(ls.length, g(ls.length))
@@ -63,6 +48,21 @@ func (ls *List) Copy() *List {
 	return cpy
 }
 
+// Equal returns true if two lists contain equal values.
+func (ls *List) Equal(list *List) bool {
+	if ls.length != list.length {
+		return false
+	}
+
+	for left, right := ls.head, list.head; left != nil && right != nil; left, right = left.next, right.next {
+		if left.value != right.value {
+			return false
+		}
+	}
+
+	return true
+}
+
 // Filter returns a new list without the filtered values given a filter function.
 func (ls *List) Filter(f Filterer) *List {
 	newLs := New(ls.less)
@@ -73,30 +73,6 @@ func (ls *List) Filter(f Filterer) *List {
 	}
 
 	return newLs
-}
-
-// get the ith item from a list.
-func (ls *List) get(i int) *item {
-	if i < 0 || ls.length <= i {
-		panic("index out of range")
-	}
-
-	var itm *item
-	if i < ls.length>>1 {
-		// i is closer to 0 than n
-		itm = ls.head
-		for ; 0 < i && itm != nil; itm = itm.next {
-			i--
-		}
-	} else {
-		// i is closer to n than 0
-		itm = ls.tail
-		for ; i+1 < ls.length && itm != nil; itm = itm.prev {
-			i++
-		}
-	}
-
-	return itm
 }
 
 // InsertAt inserts a value into the ith index.
@@ -120,7 +96,7 @@ func (ls *List) InsertAt(i int, value interface{}) *List {
 		ls.head = ls.head.prev
 	default:
 		// 0 < i < length --> insert as normal
-		itm := ls.get(i)
+		itm := ls.item(i)
 		itm.prev.next = &item{value: value, prev: itm.prev, next: itm}
 		itm.prev = itm.prev.next
 	}
@@ -129,14 +105,38 @@ func (ls *List) InsertAt(i int, value interface{}) *List {
 	return ls
 }
 
+// item returns the ith item from a list.
+func (ls *List) item(i int) *item {
+	if i < 0 || ls.length <= i {
+		panic("index out of range")
+	}
+
+	var itm *item
+	if i < ls.length>>1 {
+		// i is closer to 0 than n
+		itm = ls.head
+		for ; 0 < i && itm != nil; itm = itm.next {
+			i--
+		}
+	} else {
+		// i is closer to n than 0
+		itm = ls.tail
+		for ; i+1 < ls.length && itm != nil; itm = itm.prev {
+			i++
+		}
+	}
+
+	return itm
+}
+
 // Len of a list.
 func (ls *List) Len() int {
 	return ls.length
 }
 
-// Less returns the default less-than comparison. Assumes less is set.
+// Less returns the default less-than comparison on the ith and jth items. Assumes less is set.
 func (ls *List) Less(i, j int) bool {
-	return ls.less(ls.get(i).value, ls.get(j).value)
+	return ls.less(ls.item(i).value, ls.item(j).value)
 }
 
 // Map a list to a new list given a mapping function.
@@ -170,8 +170,12 @@ func (ls *List) Push(value interface{}) {
 
 // Reduce a list to a value given a reducing function.
 func (ls *List) Reduce(f Reducer) interface{} {
-	var value interface{}
-	for itm := ls.head; itm != nil; itm = itm.next {
+	if ls.length == 0 {
+		panic("list: cannot reduce empty list")
+	}
+
+	value := ls.head.value
+	for itm := ls.head.next; itm != nil; itm = itm.next {
 		value = f(value, itm.value)
 	}
 
@@ -232,7 +236,7 @@ func (ls *List) RemoveAt(i int) interface{} {
 		}
 	default:
 		// Remove a normal item;
-		itm := ls.get(i)
+		itm := ls.item(i)
 		value = itm.value
 		itm.prev.next = itm.next
 		itm.next.prev = itm.prev
@@ -262,7 +266,7 @@ func (ls *List) Search(value interface{}) (int, bool) {
 }
 
 // SetLess sets the less function for a list.
-func (ls *List) SetLess(less Less) *List {
+func (ls *List) SetLess(less Lesser) *List {
 	ls.less = less
 	return ls
 }
@@ -300,7 +304,7 @@ func (ls *List) SubList(i, j int) *List {
 	}
 
 	sub := New(ls.less)
-	for itm := ls.get(i); i < j && itm != nil; itm = itm.next {
+	for itm := ls.item(i); i < j && itm != nil; itm = itm.next {
 		sub.InsertAt(sub.length, itm.value)
 		i++
 	}
@@ -310,7 +314,7 @@ func (ls *List) SubList(i, j int) *List {
 
 // Swap two items in a list.
 func (ls *List) Swap(i, j int) {
-	x, y := ls.get(i), ls.get(j)
+	x, y := ls.item(i), ls.item(j)
 	x.value, y.value = y.value, x.value
 }
 
@@ -331,5 +335,5 @@ func (ls *List) ToMap() map[int]interface{} {
 
 // Value returns the ith value from a list. Value is not removed from the list.
 func (ls *List) Value(i int) interface{} {
-	return ls.get(i).value
+	return ls.item(i).value
 }
