@@ -32,7 +32,11 @@ type Reducer func(x, y interface{}) interface{}
 // New list of values.
 func New(less Less, values ...interface{}) *List {
 	ls := List{less: less}
-	return ls.Append(values...)
+	for i := 0; i < len(values); i++ {
+		ls.InsertAt(i, values[i])
+	}
+
+	return &ls
 }
 
 // Generate a list of n values.
@@ -136,16 +140,6 @@ func (ls *List) ToMap() map[int]interface{} {
 	}
 
 	return m
-}
-
-// Pop removes the tail value from a list.
-func (ls *List) Pop() interface{} {
-	return ls.RemoveAt(ls.length - 1)
-}
-
-// Push appends a value onto a list.
-func (ls *List) Push(value interface{}) {
-	ls.InsertAt(ls.length, value)
 }
 
 // Remove ...

@@ -42,13 +42,9 @@ type TestStruct struct {
 }
 
 // Compare two test structs.
-func (ts *TestStruct) Compare(x Comparable) int {
-	u := x.(*TestStruct)
+func (ts TestStruct) Compare(x Comparable) int {
+	u := x.(TestStruct)
 	switch {
-	// case ts.value < u.value:
-	// 	return -1
-	// case u.value < ts.value:
-	// 	return 1
 	case ts.key < u.key:
 		return -1
 	case u.key < ts.key:
@@ -58,8 +54,8 @@ func (ts *TestStruct) Compare(x Comparable) int {
 	}
 }
 
-func (ts *TestStruct) String() string {
-	return fmt.Sprintf("[%d, %s]", ts.key, ts.value)
+func (ts TestStruct) String() string {
+	return fmt.Sprintf("(%d, %s)", ts.key, ts.value)
 }
 
 func TestSortedList(t *testing.T) {
@@ -123,15 +119,16 @@ func TestSortedList2(t *testing.T) {
 	initSeed()
 
 	sl := New(
-		&TestStruct{key: 2, value: "two"},
-		&TestStruct{key: 4, value: "four"},
-		&TestStruct{key: 3, value: "three"},
-		&TestStruct{key: 5, value: "five"},
-		&TestStruct{key: 1, value: "one"},
+		TestStruct{key: 2, value: "two"},
+		TestStruct{key: 4, value: "four"},
+		TestStruct{key: 3, value: "three"},
+		TestStruct{key: 5, value: "five"},
+		TestStruct{key: 1, value: "one"},
+		TestStruct{key: 3, value: "three"},
 	)
 
 	for i := 1; i <= 5; i++ {
-		if v := sl.Contains(&TestStruct{key: i}); !v {
+		if v := sl.Contains(TestStruct{key: i}); !v {
 			t.Fatalf("\nexpected %t\nreceived %t\n", true, v)
 		}
 	}
